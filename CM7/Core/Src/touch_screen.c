@@ -93,6 +93,7 @@ HAL_StatusTypeDef ts_init(
     uint32_t accuracy)
 {
     hts.hi2c = hi2c;
+    hts.config.state = TS_ENABLED;
     hts.config.width = width;
     hts.config.height = height;
     hts.config.orientation = orientation;
@@ -103,8 +104,14 @@ HAL_StatusTypeDef ts_init(
     return _ts_controller_init();
 }
 
-HAL_StatusTypeDef ts_get_state(TsState * state) {
-    if (state == NULL)
+TsState ts_get_state() {
+    return hts.config.state;
+}
+
+HAL_StatusTypeDef ts_get_info(TsInfo * info) {
+    if (hts.config.state == TS_DISABLED)
+        return HAL_BUSY;
+    if (info == NULL)
         return HAL_ERROR;
 
     FT6X06_State_t stat;
@@ -132,35 +139,43 @@ HAL_StatusTypeDef ts_get_state(TsState * state) {
         }
 
         // Apply boundary
-        state->x = (x_oriented * hts.config.width) / hts.config.max_x;
-        state->y = (y_oriented * hts.config.height) / hts.config.max_y;
-        state->detected = stat.TouchDetected;
+        info->x = (x_oriented * hts.config.width) / hts.config.max_x;
+        info->y = (y_oriented * hts.config.height) / hts.config.max_y;
+        info->detected = stat.TouchDetected;
 
         // Check accuracy
-        x_diff = (state->x > hts.config.prev_x)?
-            (state->x - hts.config.prev_x):
-            (hts.config.prev_x - state->x);
+        x_diff = (info->x > hts.config.prev_x)?
+            (info->x - hts.config.prev_x):
+            (hts.config.prev_x - info->x);
 
-        y_diff = (state->y > hts.config.prev_y)?
-            (state->y - hts.config.prev_y):
-            (hts.config.prev_y - state->y);
+        y_diff = (info->y > hts.config.prev_y)?
+            (info->y - hts.config.prev_y):
+            (hts.config.prev_y - info->y);
 
         // Check if should be considered as new touch
         if (x_diff > hts.config.accuracy || y_diff > hts.config.accuracy) {
-            hts.config.prev_x = state->x;
-            hts.config.prev_y = state->y;
+            hts.config.prev_x = info->x;
+            hts.config.prev_y = info->y;
         }
         else {
-            state->x = hts.config.prev_x;
-            state->y = hts.config.prev_y;
+            info->x = hts.config.prev_x;
+            info->y = hts.config.prev_y;
         }
     }
     else {
-        state->detected = 0;
-        state->x = hts.config.prev_x;
-        state->y = hts.config.prev_y;
+        info->detected = 0;
+        info->x = hts.config.prev_x;
+        info->y = hts.config.prev_y;
     }
 
     return HAL_OK;
+}
+
+void ts_enable(void) {
+    hts.config.state = TS_ENABLED;
+}
+
+void ts_disable(void) {
+    hts.config.state = TS_ENABLED;
 }
 

@@ -949,9 +949,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
     }
     else if (pin == TOUCH_INTERRUPT_Pin) {
         // Get touch screen info
-        TsState state = { 0 };
-        if (ts_get_state(&state) == HAL_OK)
-            lv_api_update_ts_status(&state);
+        TsInfo info;
+        if (ts_get_info(&info) == HAL_OK)
+            lv_api_update_ts_status(&info);
     }
     else if (pin == JOY_SELECT_Pin) {
         HAL_UART_Transmit(&huart1, (uint8_t *)"Joypad select\r\n", 15, 10);

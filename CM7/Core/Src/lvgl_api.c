@@ -11,11 +11,12 @@
 
 #include <string.h>
 #include "stm32h7xx_hal_ltdc.h"
+#include "touch_screen.h"
 
 extern LTDC_HandleTypeDef hltdc;
 
 // Master touch screen status
-static TsState ts_state;
+static TsInfo ts_info;
 
 /**
  * @brief Lvgl callback used by the library that gets called after the rendering has finished
@@ -53,15 +54,17 @@ static void _lv_flush_callback(lv_display_t * display, const lv_area_t * area, u
  * @param data A pointer to the data to update
  */
 static void _lv_update_ts_indev_callback(lv_indev_t * touch_screen, lv_indev_data_t * data) {
-    if (!ts_state.detected)
+    if (ts_get_state() == TS_DISABLED)
+        return;
+    if (!ts_info.detected)
         return;
 
     lv_display_t * display = lv_indev_get_display(touch_screen);
 
-    data->point.x = ts_state.x;
-    data->point.y = lv_display_get_vertical_resolution(display) - ts_state.y;
-    data->state = ts_state.detected ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
-    ts_get_state(&ts_state);
+    data->point.x = ts_info.x;
+    data->point.y = lv_display_get_vertical_resolution(display) - ts_info.y;
+    data->state = ts_info.detected ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
+    ts_get_info(&ts_info);
 }
 
 
@@ -93,10 +96,10 @@ void lv_api_init(
     lv_indev_set_read_cb(handler->touch_screen, _lv_update_ts_indev_callback);
 }
 
-void lv_api_update_ts_status(TsState * state) {
-    if (state == NULL)
+void lv_api_update_ts_status(TsInfo * info) {
+    if (info == NULL)
         return; 
-    memcpy(&ts_state, state, sizeof(ts_state));
+    memcpy(&ts_info, info, sizeof(ts_info));
 }
 
 void lv_api_run(void) {

@@ -47,7 +47,7 @@ void lv_api_init(
  *
  * @param state A pointer to a touch screen state structure
  */
-void lv_api_update_ts_status(TsState * state);
+void lv_api_update_ts_status(TsInfo * info);
 
 /**
  * @brief Run the internal logic of LVGL

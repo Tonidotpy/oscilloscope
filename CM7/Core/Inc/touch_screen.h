@@ -11,10 +11,19 @@
 
 #include "main.h"
 
+#include <stdbool.h>
+
 #define TS_SWAP_NONE 0x01U
 #define TS_SWAP_X 0x02U
 #define TS_SWAP_Y 0x04U
 #define TS_SWAP_XY 0x08U
+
+
+// Touch screen state
+typedef enum {
+    TS_DISABLED,
+    TS_ENABLED
+} TsState;
 
 // Touch screen slave I2C addresses
 typedef enum {
@@ -37,11 +46,12 @@ typedef struct {
     uint32_t detected;
     uint32_t x;
     uint32_t y;
-} TsState;
+} TsInfo;
 
 // Touch screen configuration
 typedef struct
 {
+    TsState state;
     uint32_t width;
     uint32_t height;
     uint32_t orientation; // Orientation from the upper left position
@@ -71,10 +81,23 @@ HAL_StatusTypeDef ts_init(
 );
 
 /**
+ * @brief Get the current state of the touch screen
+ *
+ * @return TsState The state of the touch screen
+ */
+TsState ts_get_state(void);
+
+/**
   * @brief Returns positions of a single touch on the screen
   * @param state A pointer to a structure where the touch info are stored
   * @retval HAL_StatusTypeDef HAL_OK if the state is retreived correctly
   */
-HAL_StatusTypeDef ts_get_state(TsState * state);
+HAL_StatusTypeDef ts_get_info(TsInfo * info);
+
+/** @brief Enable the touch screen */
+void ts_enable(void);
+
+/** @brief Disable the touch screen */
+void ts_disable(void);
 
 #endif  // TOUCH_SCREEN_H
