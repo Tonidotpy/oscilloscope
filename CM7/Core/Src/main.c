@@ -47,6 +47,8 @@
 #define HSEM_ID_0 (0U) /* HW semaphore 0*/
 #endif
 
+#define ADC_BUF_LEN 4096
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -114,7 +116,8 @@ static void value_changed_event_cb(lv_event_t * e) {
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+  uint16_t raw;
+  char msg[10];
   /* USER CODE END 1 */
 /* USER CODE BEGIN Boot_Mode_Sequence_0 */
   int32_t timeout;
@@ -237,6 +240,14 @@ Error_Handler();
         HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
         timestamp = HAL_GetTick();
     }
+
+    //ADC Read
+    HAL_ADC_Start(&hadc3);
+    HAL_ADC_PollForConversion(&hadc3, HAL_MAX_DELAY);
+    raw = HAL_ADC_GetValue(&hadc3);
+    // Convert to string and print
+    sprintf(msg, "%hu\r\n", raw);
+    HAL_UART_Transmit(&huart1, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
 
     lv_api_run();
 
