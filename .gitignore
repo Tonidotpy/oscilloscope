@@ -1,0 +1,18 @@
+# Binaries
+*.o
+*.elf
+*.bin
+*.hex
+*.map
+.mxproject
+
+# Build directories
+**/build/
+**/Backup/*
+
+# IDE related files and directories
+**/.vscode/*
+**/.idea/*
+**/.cache/*
+
+compile_commands.json
