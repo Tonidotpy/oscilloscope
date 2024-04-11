@@ -29,7 +29,6 @@
 
 #include "config.h"
 #include "lcd.h"
-#include "lv_obj_style.h"
 #include "lvgl_api.h"
 #include "touch_screen.h"
 
@@ -594,6 +593,10 @@ static void MX_I2C4_Init(void)
   }
   /* USER CODE BEGIN I2C4_Init 2 */
 
+  // Start DSI HOST handler after LTDC initialization to avoid synchronization issues
+  if (HAL_DSI_Start(&hdsi) != HAL_OK)
+      Error_Handler();
+
   /* USER CODE END I2C4_Init 2 */
 
 }
@@ -655,10 +658,6 @@ static void MX_LTDC_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN LTDC_Init 2 */
-
-  // Start DSI HOST handler after LTDC initialization to avoid synchronization issues
-  if (HAL_DSI_Start(&hdsi) != HAL_OK)
-      Error_Handler();
 
   /* USER CODE END LTDC_Init 2 */
 
@@ -986,7 +985,7 @@ void Error_Handler(void)
   HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
   HAL_UART_Transmit(&huart1, (uint8_t *)"[ERROR]: Error handler called\r\n", 31, 10);
 
-  while (1) { }
+  while (1) {  }
   /* USER CODE END Error_Handler_Debug */
 }
 
