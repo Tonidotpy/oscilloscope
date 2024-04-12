@@ -87,7 +87,10 @@ all:
 	cd	CM4 && $(MAKE)
 	cd	CM7 && $(MAKE)
 
-
+# Flash action: works only with the CM7 core for now
+flash:
+	cd CM4 && $(MAKE) flash
+	cd CM7 && $(MAKE) flash
 
 
 

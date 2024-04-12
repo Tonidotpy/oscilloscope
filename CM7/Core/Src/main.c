@@ -191,8 +191,9 @@ Error_Handler();
   if (ts_init(&hi2c4, LCD_WIDTH, LCD_HEIGHT, TS_ORIENTATION_SWAP_XY, 2) != HAL_OK)
       Error_Handler();
 
-  // Turn off the LCD
+  // Turn off the LCD and disable touch screen
   lcd_off();
+  ts_disable();
 
   // Init lvgl api
   lv_api_init(
@@ -945,7 +946,14 @@ static void MX_GPIO_Init(void)
 
 void HAL_GPIO_EXTI_Callback(uint16_t pin) {
     if (pin == USER_BUTTON_Pin) {
-        lcd_get_status() ? lcd_off() : lcd_on();
+        if (lcd_get_status() == LCD_ON) {
+            lcd_off();
+            ts_disable();
+        }
+        else {
+            lcd_on();
+            ts_enable();
+        }
     }
     else if (pin == TOUCH_INTERRUPT_Pin) {
         // Get touch screen info

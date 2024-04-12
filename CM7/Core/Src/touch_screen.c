@@ -176,6 +176,6 @@ void ts_enable(void) {
 }
 
 void ts_disable(void) {
-    hts.config.state = TS_ENABLED;
+    hts.config.state = TS_DISABLED;
 }
 
