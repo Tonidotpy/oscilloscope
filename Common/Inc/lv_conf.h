@@ -593,7 +593,7 @@
  *==================*/
 
 /*A simple, impressive and very complete theme*/
-#define LV_USE_THEME_DEFAULT 1
+#define LV_USE_THEME_DEFAULT 0
 #if LV_USE_THEME_DEFAULT
 
     /*0: Light mode; 1: Dark mode*/
@@ -610,7 +610,7 @@
 #define LV_USE_THEME_SIMPLE 1
 
 /*A theme designed for monochrome displays*/
-#define LV_USE_THEME_MONO 1
+#define LV_USE_THEME_MONO 0
 
 /*==================
  * LAYOUTS

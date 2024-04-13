@@ -94,16 +94,6 @@ static void MX_CRC_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-static void value_changed_event_cb(lv_event_t * e) {
-    lv_obj_t * arc = lv_event_get_target(e);
-    lv_obj_t * label = lv_event_get_user_data(e);
-
-    lv_label_set_text_fmt(label, "%" LV_PRId32 "%%", lv_arc_get_value(arc));
-
-    /*Rotate the label to the current position of the arc*/
-    lv_arc_rotate_obj_to_angle(arc, label, 25);
-}
-
 /* USER CODE END 0 */
 
 /**
@@ -204,27 +194,6 @@ Error_Handler();
       (void *)LCD_FRAME_BUFFER_0_ADDRESS,
       LCD_FRAME_BUFFER_0_WIDTH
   );
-
-
-  lv_obj_t * label = lv_label_create(lv_screen_active());
-
-  /*Create an Arc*/
-  lv_obj_t * arc = lv_arc_create(lv_screen_active());
-  lv_obj_set_size(arc, 150, 150);
-  lv_arc_set_rotation(arc, 135);
-  lv_arc_set_bg_angles(arc, 0, 270);
-  lv_arc_set_value(arc, 10);
-  lv_obj_center(arc);
-  lv_obj_add_event_cb(arc, value_changed_event_cb, LV_EVENT_VALUE_CHANGED, label);
-  
-  /*Manually update the label for the first time*/
-  lv_obj_send_event(arc, LV_EVENT_VALUE_CHANGED, NULL);
-
-  // Set default theme and styles
-  static lv_style_t style;
-  lv_style_init(&style);
-  lv_style_set_arc_color(&style, lv_color_hex(0x850000));
-  lv_obj_add_style(arc, &style, LV_STATE_DEFAULT);
 
   /* USER CODE END 2 */
 

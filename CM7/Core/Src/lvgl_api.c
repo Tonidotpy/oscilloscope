@@ -10,6 +10,9 @@
 #include "lvgl_api.h"
 
 #include <string.h>
+
+#include "lvgl.h"
+#include "lvgl_colors.h"
 #include "stm32h7xx_hal_ltdc.h"
 #include "touch_screen.h"
 
@@ -48,6 +51,30 @@ static void _lv_flush_callback(lv_display_t * display, const lv_area_t * area, u
     lv_display_flush_ready(display);
 }
 /**
+ * @brief Apply all the custom styles to the theme
+ *
+ * @param th The current theme
+ * @param obj The object to apply the style to
+ */
+static lv_obj_t * chart;
+static void _lv_apply_theme(lv_theme_t * th, lv_obj_t * obj) {
+    LV_UNUSED(th);
+
+    // static lv_style_t main_style;
+    // lv_style_init(&main_style);
+    // lv_style_set_bg_color(&main_style, LV_BLACK);
+    // lv_obj_add_style(obj, &main_style, LV_PART_MAIN);
+
+    if (lv_obj_check_type(obj, &lv_chart_class)) {
+        static lv_style_t chart_main_style;
+        lv_style_init(&chart_main_style);
+        lv_style_set_bg_color(&chart_main_style, LV_BLACK);
+        lv_style_set_line_color(&chart_main_style, LV_WHITE);
+        lv_style_set_line_opa(&chart_main_style, LV_OPA_20);
+        lv_obj_add_style(obj, &chart_main_style, LV_PART_MAIN);
+    }
+}
+/**
  * @brief Update the status of the lvgl touch screen input device
  *
  * @param indev A pointer to the input device
@@ -65,6 +92,28 @@ static void _lv_update_ts_indev_callback(lv_indev_t * touch_screen, lv_indev_dat
     data->point.y = lv_display_get_vertical_resolution(display) - ts_info.y;
     data->state = ts_info.detected ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
     ts_get_info(&ts_info);
+}
+/**
+ * @brief Initialize the chart visualization for the oscilloscope
+ */
+void _lv_init_chart(LvHandler * handler) {
+    lv_obj_t * screen = lv_display_get_screen_active(handler->display);
+    size_t w = lv_display_get_horizontal_resolution(handler->display);
+    size_t h = lv_display_get_vertical_resolution(handler->display);
+
+    chart = lv_chart_create(screen);
+    lv_chart_set_type(chart, LV_CHART_TYPE_LINE);
+    lv_obj_set_size(chart, w, h);
+    lv_obj_center(chart);
+
+    lv_chart_set_div_line_count(chart, 6, 10);
+
+    // TODO: Remove
+    lv_chart_series_t * series = lv_chart_add_series(chart, LV_YELLOW, LV_CHART_AXIS_PRIMARY_Y);
+    for (size_t i = 0; i < 10; i++)
+        /*Set the next points on 'ser1'*/
+        lv_chart_set_next_value(chart, series, lv_rand(10, 50));
+    lv_chart_refresh(chart);
 }
 
 
@@ -94,6 +143,16 @@ void lv_api_init(
     handler->touch_screen = lv_indev_create();
     lv_indev_set_type(handler->touch_screen, LV_INDEV_TYPE_POINTER);
     lv_indev_set_read_cb(handler->touch_screen, _lv_update_ts_indev_callback);
+
+    // Initialize the theme and styles
+    lv_theme_t * simple_theme = lv_display_get_theme(handler->display);
+    handler->theme = *simple_theme;
+    lv_theme_set_parent(&handler->theme, simple_theme);
+    lv_theme_set_apply_cb(&handler->theme, _lv_apply_theme);
+    lv_display_set_theme(handler->display, &handler->theme); 
+
+    // Initialize oscilloscope chart
+    _lv_init_chart(handler);
 }
 
 void lv_api_update_ts_status(TsInfo * info) {
