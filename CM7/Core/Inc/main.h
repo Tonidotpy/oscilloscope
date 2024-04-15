@@ -90,10 +90,6 @@ void Error_Handler(void);
 #define JOY_SELECT_EXTI_IRQn EXTI2_IRQn
 #define LED4_Pin GPIO_PIN_15
 #define LED4_GPIO_Port GPIOI
-#define ADC3_IN0_Pin GPIO_PIN_2
-#define ADC3_IN0_GPIO_Port GPIOC
-#define ADC3_IN1_Pin GPIO_PIN_3
-#define ADC3_IN1_GPIO_Port GPIOC
 #define LCD_TE_Pin GPIO_PIN_2
 #define LCD_TE_GPIO_Port GPIOJ
 
