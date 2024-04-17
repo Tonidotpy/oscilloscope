@@ -55,5 +55,10 @@ void lv_api_update_ts_status(TsInfo * info);
  */
 void lv_api_run(void);
 
+/**
+ * @brief Draw point wrapper
+*/
+void lv_api_draw_point(LvHandler * handler, int32_t value);
+
 
 #endif  // LVGL_API_H

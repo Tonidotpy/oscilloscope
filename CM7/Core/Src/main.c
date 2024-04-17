@@ -103,7 +103,8 @@ static void MX_ADC3_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+  uint16_t raw;
+  char msg[10];
   /* USER CODE END 1 */
 /* USER CODE BEGIN Boot_Mode_Sequence_0 */
   int32_t timeout;
@@ -182,8 +183,8 @@ Error_Handler();
       Error_Handler();
 
   // Turn off the LCD and disable touch screen
-  lcd_off();
-  ts_disable();
+  //lcd_off();
+  //ts_disable();
 
   // Init lvgl api
   lv_api_init(
@@ -208,6 +209,12 @@ Error_Handler();
     }
 
     lv_api_run();
+
+    HAL_ADC_Start(&hadc3);
+    HAL_ADC_PollForConversion(&hadc3, HAL_MAX_DELAY);
+    raw = HAL_ADC_GetValue(&hadc3);
+
+    lv_api_draw_point(&lv_handler, (int32_t)(raw / 65535.0 * 80.0));
 
     /* USER CODE END WHILE */
 

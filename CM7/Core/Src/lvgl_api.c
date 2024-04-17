@@ -57,6 +57,7 @@ static void _lv_flush_callback(lv_display_t * display, const lv_area_t * area, u
  * @param obj The object to apply the style to
  */
 static lv_obj_t * chart;
+static lv_chart_series_t * main_series;
 static void _lv_apply_theme(lv_theme_t * th, lv_obj_t * obj) {
     LV_UNUSED(th);
 
@@ -106,7 +107,10 @@ void _lv_init_chart(LvHandler * handler) {
     lv_obj_set_size(chart, w, h);
     lv_obj_center(chart);
 
-    lv_chart_set_div_line_count(chart, 6, 10);
+    lv_chart_set_div_line_count(chart, 10, 16);
+    lv_chart_set_point_count(chart, 166);
+
+    main_series = lv_chart_add_series(chart, LV_RED, LV_CHART_AXIS_PRIMARY_Y);
 
     // TODO: Remove
     lv_chart_series_t * series = lv_chart_add_series(chart, LV_YELLOW, LV_CHART_AXIS_PRIMARY_Y);
@@ -116,6 +120,10 @@ void _lv_init_chart(LvHandler * handler) {
     lv_chart_refresh(chart);
 }
 
+void lv_api_draw_point(LvHandler * handler, int32_t value) {
+    lv_chart_set_next_value(chart, main_series, value);
+    lv_chart_refresh(chart);
+}
 
 void lv_api_init(
     LvHandler * handler,
