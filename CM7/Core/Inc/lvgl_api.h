@@ -5,6 +5,7 @@
  *
  * @date Apr 9, 2024
  * @author Antonio Gelain [antonio.gelain@studenti.unitn.it]
+ * @author Enrico Dal Bianco [enrico.dalbianco@studenti.unitn.it]
  */
 
 #ifndef LVGL_API_H
@@ -15,10 +16,21 @@
 #include "lvgl.h"
 #include "touch_screen.h"
 
+/** @brief Horizontal and vertical line count for the chart */
+#define LV_API_CHART_HOR_LINE_COUNT 10
+#define LV_API_CHART_VER_LINE_COUNT 16
+
+/** @brief Total number of points of the chart */
+#define LV_API_CHART_POINT_COUNT 166
+
+
 typedef struct {
     lv_theme_t theme;
     lv_display_t * display;
     lv_indev_t * touch_screen;
+
+    lv_obj_t * chart;
+    lv_chart_series_t * main_series;
 } LvHandler;
 
 /**
@@ -56,7 +68,10 @@ void lv_api_update_ts_status(TsInfo * info);
 void lv_api_run(void);
 
 /**
- * @brief Draw point wrapper
+ * @brief Add a new point at the end of the main series
+ *
+ * @param handler The LVGL structure handler
+ * @param value The Y value of the point to add
 */
 void lv_api_draw_point(LvHandler * handler, int32_t value);
 

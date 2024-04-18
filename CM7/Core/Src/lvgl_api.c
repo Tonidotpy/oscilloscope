@@ -5,6 +5,7 @@
  *
  * @date Apr 9, 2024
  * @author Antonio Gelain [antonio.gelain@studenti.unitn.it]
+ * @author Enrico Dal Bianco [enrico.dalbianco@studenti.unitn.it]
  */
 
 #include "lvgl_api.h"
@@ -56,8 +57,6 @@ static void _lv_flush_callback(lv_display_t * display, const lv_area_t * area, u
  * @param th The current theme
  * @param obj The object to apply the style to
  */
-static lv_obj_t * chart;
-static lv_chart_series_t * main_series;
 static void _lv_apply_theme(lv_theme_t * th, lv_obj_t * obj) {
     LV_UNUSED(th);
 
@@ -102,27 +101,15 @@ void _lv_init_chart(LvHandler * handler) {
     size_t w = lv_display_get_horizontal_resolution(handler->display);
     size_t h = lv_display_get_vertical_resolution(handler->display);
 
-    chart = lv_chart_create(screen);
-    lv_chart_set_type(chart, LV_CHART_TYPE_LINE);
-    lv_obj_set_size(chart, w, h);
-    lv_obj_center(chart);
+    handler->chart = lv_chart_create(screen);
+    lv_chart_set_type(handler->chart, LV_CHART_TYPE_LINE);
+    lv_obj_set_size(handler->chart, w, h);
+    lv_obj_center(handler->chart);
 
-    lv_chart_set_div_line_count(chart, 10, 16);
-    lv_chart_set_point_count(chart, 166);
+    lv_chart_set_div_line_count(handler->chart, LV_API_CHART_HOR_LINE_COUNT, LV_API_CHART_VER_LINE_COUNT);
+    lv_chart_set_point_count(handler->chart, LV_API_CHART_POINT_COUNT);
 
-    main_series = lv_chart_add_series(chart, LV_RED, LV_CHART_AXIS_PRIMARY_Y);
-
-    // TODO: Remove
-    lv_chart_series_t * series = lv_chart_add_series(chart, LV_YELLOW, LV_CHART_AXIS_PRIMARY_Y);
-    for (size_t i = 0; i < 10; i++)
-        /*Set the next points on 'ser1'*/
-        lv_chart_set_next_value(chart, series, lv_rand(10, 50));
-    lv_chart_refresh(chart);
-}
-
-void lv_api_draw_point(LvHandler * handler, int32_t value) {
-    lv_chart_set_next_value(chart, main_series, value);
-    lv_chart_refresh(chart);
+    handler->main_series = lv_chart_add_series(handler->chart, LV_RED, LV_CHART_AXIS_PRIMARY_Y);
 }
 
 void lv_api_init(
@@ -172,5 +159,10 @@ void lv_api_update_ts_status(TsInfo * info) {
 void lv_api_run(void) {
     // Update LVGL internal status
     lv_timer_handler_run_in_period(5);
+}
+
+void lv_api_draw_point(LvHandler * handler, int32_t value) {
+    lv_chart_set_next_value(handler->chart, handler->main_series, value);
+    lv_chart_refresh(handler->chart);
 }
 

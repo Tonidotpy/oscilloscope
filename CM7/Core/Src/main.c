@@ -183,8 +183,8 @@ Error_Handler();
       Error_Handler();
 
   // Turn off the LCD and disable touch screen
-  //lcd_off();
-  //ts_disable();
+  // lcd_off();
+  // ts_disable();
 
   // Init lvgl api
   lv_api_init(
