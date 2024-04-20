@@ -566,10 +566,6 @@ static void MX_I2C4_Init(void)
   }
   /* USER CODE BEGIN I2C4_Init 2 */
 
-  // Start DSI HOST handler after LTDC initialization to avoid synchronization issues
-  if (HAL_DSI_Start(&hdsi) != HAL_OK)
-      Error_Handler();
-
   /* USER CODE END I2C4_Init 2 */
 
 }
@@ -631,6 +627,10 @@ static void MX_LTDC_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN LTDC_Init 2 */
+
+  // Start DSI HOST handler after LTDC initialization to avoid synchronization issues
+  if (HAL_DSI_Start(&hdsi) != HAL_OK)
+      Error_Handler();
 
   /* USER CODE END LTDC_Init 2 */
 

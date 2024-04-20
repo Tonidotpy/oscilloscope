@@ -207,7 +207,7 @@ $(BUILD_DIR):
 # Flash
 #######################################
 flash: $(BUILD_DIR)/$(TARGET).bin
-	# st-flash --reset write $< 0x08000000
+	st-flash --reset write $< 0x08100000
 
 #######################################
 # clean up
