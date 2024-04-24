@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "waves.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -110,7 +110,8 @@ int main(void)
   MX_BDMA_Init();
   MX_DAC1_Init();
   /* USER CODE BEGIN 2 */
-
+  int ind = 0;
+  int freq = HAL_GetTick();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -119,6 +120,13 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
+    HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, (uint32_t)(waves_table[0][ind % 120] / 16));
+    
+    if(HAL_GetTick() - freq >= 10)
+    {
+      ind++;
+      freq = HAL_GetTick();
+    }
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -162,7 +170,7 @@ static void MX_DAC1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN DAC1_Init 2 */
-
+  HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
   /* USER CODE END DAC1_Init 2 */
 
 }
