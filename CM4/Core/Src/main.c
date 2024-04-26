@@ -55,7 +55,6 @@ DMA_HandleTypeDef hdma_dac1_ch1;
 /* Private function prototypes -----------------------------------------------*/
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-static void MX_BDMA_Init(void);
 static void MX_DAC1_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -107,26 +106,26 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_BDMA_Init();
   MX_DAC1_Init();
   /* USER CODE BEGIN 2 */
+
   int ind = 0;
   int freq = HAL_GetTick();
+  
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, (uint32_t)(waves_table[0][ind % 120] / 16));
+
+    if (HAL_GetTick() - freq >= 10) {
+        ind++;
+        freq = HAL_GetTick();
+    }
     /* USER CODE END WHILE */
 
-    HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, (uint32_t)(waves_table[0][ind % 120] / 16));
-    
-    if(HAL_GetTick() - freq >= 10)
-    {
-      ind++;
-      freq = HAL_GetTick();
-    }
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -170,19 +169,10 @@ static void MX_DAC1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN DAC1_Init 2 */
+
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
+
   /* USER CODE END DAC1_Init 2 */
-
-}
-
-/**
-  * Enable DMA controller clock
-  */
-static void MX_BDMA_Init(void)
-{
-
-  /* DMA controller clock enable */
-  __HAL_RCC_BDMA_CLK_ENABLE();
 
 }
 
@@ -196,9 +186,9 @@ static void MX_DMA_Init(void)
   __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
-  /* DMA1_Stream0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+  /* DMA1_Stream1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
 
 }
 

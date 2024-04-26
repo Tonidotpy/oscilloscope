@@ -30,6 +30,11 @@
 #include "config.h"
 #include "lcd.h"
 #include "lvgl_api.h"
+#include "stm32h7xx_hal.h"
+#include "stm32h7xx_hal_adc.h"
+#include "stm32h7xx_hal_def.h"
+#include "stm32h7xx_hal_tim.h"
+#include "stm32h7xx_hal_uart.h"
 #include "touch_screen.h"
 
 /* USER CODE END Includes */
@@ -55,7 +60,6 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc3;
-DMA_HandleTypeDef hdma_adc3;
 
 CRC_HandleTypeDef hcrc;
 
@@ -66,6 +70,8 @@ DSI_HandleTypeDef hdsi;
 I2C_HandleTypeDef hi2c4;
 
 LTDC_HandleTypeDef hltdc;
+
+TIM_HandleTypeDef htim7;
 
 UART_HandleTypeDef huart1;
 
@@ -81,15 +87,15 @@ static LvHandler lv_handler;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-static void MX_BDMA_Init(void);
+static void MX_CRC_Init(void);
+static void MX_USART1_UART_Init(void);
 static void MX_FMC_Init(void);
 static void MX_DMA2D_Init(void);
 static void MX_DSIHOST_DSI_Init(void);
 static void MX_I2C4_Init(void);
-static void MX_CRC_Init(void);
-static void MX_USART1_UART_Init(void);
 static void MX_ADC3_Init(void);
 static void MX_LTDC_Init(void);
+static void MX_TIM7_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -106,8 +112,7 @@ static void MX_LTDC_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-  uint16_t raw;
-  char msg[10];
+
   /* USER CODE END 1 */
 /* USER CODE BEGIN Boot_Mode_Sequence_0 */
   int32_t timeout;
@@ -165,15 +170,15 @@ Error_Handler();
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_BDMA_Init();
+  MX_CRC_Init();
+  MX_USART1_UART_Init();
   MX_FMC_Init();
   MX_DMA2D_Init();
   MX_DSIHOST_DSI_Init();
   MX_I2C4_Init();
-  MX_CRC_Init();
-  MX_USART1_UART_Init();
   MX_ADC3_Init();
   MX_LTDC_Init();
+  MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
   // Clear frame buffer memory
@@ -205,21 +210,32 @@ Error_Handler();
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+  // Start ADC conversion with timer and DMA
+  // BUG: DMA not working correctly
+  // HAL_ADC_Start_DMA(&hadc3, (uint32_t *)lv_handler.ch1_data, 1);
+  
+  // Start timer and ADC conversion
+  HAL_TIM_Base_Start_IT(&htim7);
+
   uint32_t timestamp = 0;
+
   while (1)
   {
     if (HAL_GetTick() - timestamp >= 500) {
         HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
-        timestamp = HAL_GetTick();
+        timestamp = HAL_GetTick(); 
     }
 
-    lv_api_run();
+    lv_api_run(&lv_handler);
 
+    /*
     HAL_ADC_Start(&hadc3);
     HAL_ADC_PollForConversion(&hadc3, HAL_MAX_DELAY);
-    raw = HAL_ADC_GetValue(&hadc3);
+    uint16_t raw = HAL_ADC_GetValue(&hadc3);
 
     lv_api_draw_point(&lv_handler, (int32_t)(raw / 65535.0 * 80.0));
+    */
 
     /* USER CODE END WHILE */
 
@@ -327,9 +343,9 @@ static void MX_ADC3_Init(void)
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_8CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
@@ -637,6 +653,44 @@ static void MX_LTDC_Init(void)
 }
 
 /**
+  * @brief TIM7 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM7_Init(void)
+{
+
+  /* USER CODE BEGIN TIM7_Init 0 */
+
+  /* USER CODE END TIM7_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM7_Init 1 */
+
+  /* USER CODE END TIM7_Init 1 */
+  htim7.Instance = TIM7;
+  htim7.Init.Prescaler = 20000;
+  htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim7.Init.Period = 100;
+  htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM7_Init 2 */
+
+  /* USER CODE END TIM7_Init 2 */
+
+}
+
+/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -681,22 +735,6 @@ static void MX_USART1_UART_Init(void)
   /* USER CODE BEGIN USART1_Init 2 */
 
   /* USER CODE END USART1_Init 2 */
-
-}
-
-/**
-  * Enable DMA controller clock
-  */
-static void MX_BDMA_Init(void)
-{
-
-  /* DMA controller clock enable */
-  __HAL_RCC_BDMA_CLK_ENABLE();
-
-  /* DMA interrupt init */
-  /* BDMA_Channel0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(BDMA_Channel0_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(BDMA_Channel0_IRQn);
 
 }
 
@@ -859,7 +897,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = JOY_RIGHT_Pin|JOY_LEFT_Pin|JOY_UP_Pin|JOY_DOWN_Pin
                           |JOY_SELECT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOK, &GPIO_InitStruct);
 
   /*Configure GPIO pin : TOUCH_INTERRUPT_Pin */
@@ -975,6 +1013,20 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
     else if (pin == JOY_UP_Pin) {
         HAL_UART_Transmit(&huart1, (uint8_t *)"Joypad up\r\n", 11, 10);
     }
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim) {
+    // Check if conversion has ended
+    HAL_ADC_Start(&hadc3);
+    // if (HAL_ADC_PollForConversion(&hadc3, 1) == HAL_OK) {
+    if ((hadc3.Instance->ISR & ADC_FLAG_EOC) == 0) {
+        uint16_t value = HAL_ADC_GetValue(&hadc3);
+        lv_api_add_point(&lv_handler, LV_CHANNEL_1, value);
+    }
+}
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef * hadc) {
+
 }
 
 /* USER CODE END 4 */

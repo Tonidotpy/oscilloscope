@@ -19,5 +19,6 @@
 #define LV_BLUE   ((lv_color_t)LV_COLOR_MAKE(0x22, 0x71, 0xB3))
 
 #define LV_YELLOW ((lv_color_t)LV_COLOR_MAKE(0xFF, 0xFF, 0x00))
+#define LV_PURPLE ((lv_color_t)LV_COLOR_MAKE(0xFF, 0x00, 0xFF))
 
 #endif  // LVGL_COLORS_H

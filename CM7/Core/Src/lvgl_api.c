@@ -12,6 +12,7 @@
 
 #include <string.h>
 
+#include "lv_chart.h"
 #include "lvgl.h"
 #include "lvgl_colors.h"
 #include "stm32h7xx_hal_ltdc.h"
@@ -101,15 +102,27 @@ void _lv_init_chart(LvHandler * handler) {
     size_t w = lv_display_get_horizontal_resolution(handler->display);
     size_t h = lv_display_get_vertical_resolution(handler->display);
 
+    // Setup chart
     handler->chart = lv_chart_create(screen);
     lv_chart_set_type(handler->chart, LV_CHART_TYPE_LINE);
     lv_obj_set_size(handler->chart, w, h);
     lv_obj_center(handler->chart);
 
+    // Set point and line count
     lv_chart_set_div_line_count(handler->chart, LV_API_CHART_HOR_LINE_COUNT, LV_API_CHART_VER_LINE_COUNT);
     lv_chart_set_point_count(handler->chart, LV_API_CHART_POINT_COUNT);
 
-    handler->main_series = lv_chart_add_series(handler->chart, LV_RED, LV_CHART_AXIS_PRIMARY_Y);
+    // Set range values
+    lv_chart_set_range(handler->chart, LV_CHART_AXIS_PRIMARY_Y, 0, 1000);
+    lv_chart_set_range(handler->chart, LV_CHART_AXIS_SECONDARY_Y, 0, 1000);
+
+    // Add series of points
+    handler->ch1_series = lv_chart_add_series(handler->chart, LV_YELLOW, LV_CHART_AXIS_PRIMARY_Y);
+    handler->ch2_series = lv_chart_add_series(handler->chart, LV_PURPLE, LV_CHART_AXIS_SECONDARY_Y);
+    lv_chart_set_ext_y_array(handler->chart, handler->ch1_series, handler->ch1);
+    lv_chart_set_ext_y_array(handler->chart, handler->ch2_series, handler->ch2);
+
+    lv_chart_refresh(handler->chart);
 }
 
 void lv_api_init(
@@ -120,6 +133,16 @@ void lv_api_init(
     void * frame_buffer_2,
     size_t frame_buffer_size)
 {
+    if (handler == NULL)
+        return;
+    // Set channels data to 0
+    handler->ch1_updated = false;
+    handler->ch2_updated = false;
+    memset(handler->ch1_data, 0, LV_API_CHART_POINT_COUNT * sizeof(handler->ch1_data[0]));
+    memset(handler->ch2_data, 0, LV_API_CHART_POINT_COUNT * sizeof(handler->ch2_data[0]));
+    memset(handler->ch1, LV_CHART_POINT_NONE, LV_API_CHART_POINT_COUNT * sizeof(handler->ch1[0]));
+    memset(handler->ch2, LV_CHART_POINT_NONE, LV_API_CHART_POINT_COUNT * sizeof(handler->ch2[0]));
+
     // Init LVGL
     lv_init();
 
@@ -156,13 +179,48 @@ void lv_api_update_ts_status(TsInfo * info) {
     memcpy(&ts_info, info, sizeof(ts_info));
 }
 
-void lv_api_run(void) {
+void lv_api_run(LvHandler * handler) {
+    if (handler == NULL)
+        return;
+
+    // Update data and refresh chart when ready
+    static size_t i1 = 0, i2 = 0;
+    handler->ch1[i1] = handler->ch1_data[i1] / 65U;
+    handler->ch2[i2] = handler->ch2_data[i2] / 65U;
+    if (++i1 >= LV_API_CHART_POINT_COUNT) i1 = 0;
+    if (++i2 >= LV_API_CHART_POINT_COUNT) i2 = 0;
+
+    if (i1 == 0 || i2 == 0)
+        lv_chart_refresh(handler->chart);
+
     // Update LVGL internal status
     lv_timer_handler_run_in_period(5);
 }
 
-void lv_api_draw_point(LvHandler * handler, int32_t value) {
-    lv_chart_set_next_value(handler->chart, handler->main_series, value);
+void lv_api_refresh_chart(LvHandler * handler) {
+    if (handler == NULL)
+        return;
     lv_chart_refresh(handler->chart);
 }
 
+void lv_api_add_point(LvHandler * handler, LvChannel ch, uint16_t value) {
+    if (handler == NULL)
+        return;
+
+    static size_t index1 = 0, index2 = 0;
+    switch (ch) {
+        case LV_CHANNEL_1:
+            handler->ch1_data[index1] = value;
+            if ((++index1) >= LV_API_CHART_POINT_COUNT)
+                index1 = 0;
+            break;
+        case LV_CHANNEL_2:
+            handler->ch2_data[index2] = value;
+            if ((++index2) >= LV_API_CHART_POINT_COUNT)
+                index2 = 0;
+            break;
+
+        default:
+            break;
+    }
+}

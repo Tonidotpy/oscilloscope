@@ -17,11 +17,11 @@
 #include "touch_screen.h"
 
 /** @brief Horizontal and vertical line count for the chart */
-#define LV_API_CHART_HOR_LINE_COUNT 10
-#define LV_API_CHART_VER_LINE_COUNT 16
+#define LV_API_CHART_HOR_LINE_COUNT 10U
+#define LV_API_CHART_VER_LINE_COUNT 16U
 
 /** @brief Total number of points of the chart */
-#define LV_API_CHART_POINT_COUNT 166
+#define LV_API_CHART_POINT_COUNT 2400U
 
 
 typedef struct {
@@ -30,8 +30,22 @@ typedef struct {
     lv_indev_t * touch_screen;
 
     lv_obj_t * chart;
-    lv_chart_series_t * main_series;
+    lv_chart_series_t * ch1_series;
+    lv_chart_series_t * ch2_series;
+
+    bool ch1_updated;
+    bool ch2_updated;
+    uint16_t ch1_data[LV_API_CHART_POINT_COUNT];
+    uint16_t ch2_data[LV_API_CHART_POINT_COUNT];
+    int32_t ch1[LV_API_CHART_POINT_COUNT];
+    int32_t ch2[LV_API_CHART_POINT_COUNT];
 } LvHandler;
+
+typedef enum {
+    LV_CHANNEL_1,
+    LV_CHANNEL_2,
+    LV_CHANNEL_COUNT
+} LvChannel;
 
 /**
  * @brief Initialize the LVGL internal library and register the
@@ -64,16 +78,26 @@ void lv_api_update_ts_status(TsInfo * info);
 /**
  * @brief Run the internal logic of LVGL
  * @details This function should be called as often as possible
+ *
+ * @param handler The LVGL handler structure
  */
-void lv_api_run(void);
+void lv_api_run(LvHandler * handler);
 
 /**
- * @brief Add a new point at the end of the main series
+ * @brief Update all the point of the chart on the display
+ *
+ * @param handler The LVGL handler structure
+ */
+void lv_api_refresh_chart(LvHandler * handler);
+
+/**
+ * @brief Add a new point at the end of the selected channel
  *
  * @param handler The LVGL structure handler
- * @param value The Y value of the point to add
+ * @param ch The channel to save the value to
+ * @param value The raw Y value of the point to add
 */
-void lv_api_draw_point(LvHandler * handler, int32_t value);
+void lv_api_add_point(LvHandler * handler, LvChannel ch, uint16_t value);
 
 
 #endif  // LVGL_API_H
