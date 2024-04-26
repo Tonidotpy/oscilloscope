@@ -18,6 +18,8 @@
 #include "stm32h7xx_hal_ltdc.h"
 #include "touch_screen.h"
 
+#define LERP(A, B, T) ((A) * (1.0 - T) + (B) * (T))
+
 extern LTDC_HandleTypeDef hltdc;
 
 // Master touch screen status
@@ -97,7 +99,7 @@ static void _lv_update_ts_indev_callback(lv_indev_t * touch_screen, lv_indev_dat
 /**
  * @brief Initialize the chart visualization for the oscilloscope
  */
-void _lv_init_chart(LvHandler * handler) {
+void _lv_api_chart_init(LvHandler * handler) {
     lv_obj_t * screen = lv_display_get_screen_active(handler->display);
     size_t w = lv_display_get_horizontal_resolution(handler->display);
     size_t h = lv_display_get_vertical_resolution(handler->display);
@@ -117,12 +119,15 @@ void _lv_init_chart(LvHandler * handler) {
     lv_chart_set_range(handler->chart, LV_CHART_AXIS_SECONDARY_Y, 0, 1000);
 
     // Add series of points
-    handler->ch1_series = lv_chart_add_series(handler->chart, LV_YELLOW, LV_CHART_AXIS_PRIMARY_Y);
-    handler->ch2_series = lv_chart_add_series(handler->chart, LV_PURPLE, LV_CHART_AXIS_SECONDARY_Y);
-    lv_chart_set_ext_y_array(handler->chart, handler->ch1_series, handler->ch1);
-    lv_chart_set_ext_y_array(handler->chart, handler->ch2_series, handler->ch2);
+    handler->series[CHART_HANDLER_CHANNEL_1] = lv_chart_add_series(handler->chart, LV_YELLOW, LV_CHART_AXIS_PRIMARY_Y);
+    handler->series[CHART_HANDLER_CHANNEL_2] = lv_chart_add_series(handler->chart, LV_PURPLE, LV_CHART_AXIS_SECONDARY_Y);
 
-    lv_chart_refresh(handler->chart);
+    for (size_t i = 0; i < CHART_HANDLER_CHANNEL_COUNT; ++i)
+        lv_chart_set_ext_y_array(handler->chart, handler->series[i], handler->channels[i]);
+}
+
+void _lv_api_chart_handler_init(LvHandler * handler) {
+    chart_handler_init(&handler->chart_handler, handler);
 }
 
 void lv_api_init(
@@ -136,12 +141,8 @@ void lv_api_init(
     if (handler == NULL)
         return;
     // Set channels data to 0
-    handler->ch1_updated = false;
-    handler->ch2_updated = false;
-    memset(handler->ch1_data, 0, LV_API_CHART_POINT_COUNT * sizeof(handler->ch1_data[0]));
-    memset(handler->ch2_data, 0, LV_API_CHART_POINT_COUNT * sizeof(handler->ch2_data[0]));
-    memset(handler->ch1, LV_CHART_POINT_NONE, LV_API_CHART_POINT_COUNT * sizeof(handler->ch1[0]));
-    memset(handler->ch2, LV_CHART_POINT_NONE, LV_API_CHART_POINT_COUNT * sizeof(handler->ch2[0]));
+    for (size_t i = 0; i < CHART_HANDLER_CHANNEL_COUNT; ++i)
+        memset(handler->channels[i], LV_CHART_POINT_NONE, LV_API_CHART_POINT_COUNT * sizeof(int32_t));
 
     // Init LVGL
     lv_init();
@@ -170,7 +171,8 @@ void lv_api_init(
     lv_display_set_theme(handler->display, &handler->theme); 
 
     // Initialize oscilloscope chart
-    _lv_init_chart(handler);
+    _lv_api_chart_init(handler);
+    _lv_api_chart_handler_init(handler);
 }
 
 void lv_api_update_ts_status(TsInfo * info) {
@@ -183,44 +185,32 @@ void lv_api_run(LvHandler * handler) {
     if (handler == NULL)
         return;
 
-    // Update data and refresh chart when ready
-    static size_t i1 = 0, i2 = 0;
-    handler->ch1[i1] = handler->ch1_data[i1] / 65U;
-    handler->ch2[i2] = handler->ch2_data[i2] / 65U;
-    if (++i1 >= LV_API_CHART_POINT_COUNT) i1 = 0;
-    if (++i2 >= LV_API_CHART_POINT_COUNT) i2 = 0;
-
-    if (i1 == 0 || i2 == 0)
-        lv_chart_refresh(handler->chart);
-
     // Update LVGL internal status
     lv_timer_handler_run_in_period(5);
+}
+
+void lv_api_update_points(LvHandler * handler, ChartHandlerChannel ch, int32_t * values, size_t size) {
+    if (handler == NULL || values == NULL)
+        return;
+
+    size_t j = 0;
+    const double dt = size / (double)LV_API_CHART_POINT_COUNT;
+    double t = 0;
+    for (size_t i = 0; i < LV_API_CHART_POINT_COUNT; ++i) {
+        size_t k = (j >= CHART_HANDLER_SAMPLE_COUNT - 1) ? 0 : j + 1;
+        handler->channels[ch][i] = LERP(values[j], values[k], t);
+        t += dt;
+        if (t >= 1) {
+            t = 0;
+            ++j;
+        }
+    }
+
+    lv_chart_refresh(handler->chart);
 }
 
 void lv_api_refresh_chart(LvHandler * handler) {
     if (handler == NULL)
         return;
     lv_chart_refresh(handler->chart);
-}
-
-void lv_api_add_point(LvHandler * handler, LvChannel ch, uint16_t value) {
-    if (handler == NULL)
-        return;
-
-    static size_t index1 = 0, index2 = 0;
-    switch (ch) {
-        case LV_CHANNEL_1:
-            handler->ch1_data[index1] = value;
-            if ((++index1) >= LV_API_CHART_POINT_COUNT)
-                index1 = 0;
-            break;
-        case LV_CHANNEL_2:
-            handler->ch2_data[index2] = value;
-            if ((++index2) >= LV_API_CHART_POINT_COUNT)
-                index2 = 0;
-            break;
-
-        default:
-            break;
-    }
 }

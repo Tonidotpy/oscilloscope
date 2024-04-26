@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "chart_handler.h"
 #include "config.h"
 #include "lcd.h"
 #include "lvgl_api.h"
@@ -1021,7 +1022,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim) {
     // if (HAL_ADC_PollForConversion(&hadc3, 1) == HAL_OK) {
     if ((hadc3.Instance->ISR & ADC_FLAG_EOC) == 0) {
         uint16_t value = HAL_ADC_GetValue(&hadc3);
-        lv_api_add_point(&lv_handler, LV_CHANNEL_1, value);
+        chart_handler_add_point(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, value);
     }
 }
 
