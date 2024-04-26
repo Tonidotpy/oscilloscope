@@ -17,6 +17,10 @@
 #include "touch_screen.h"
 #include "chart_handler.h"
 
+/** @brief Primary and secondary Y axis maximum coordinates for the chart */
+#define LV_API_CHART_AXIS_PRIMARY_Y_MAX_COORD 1000U
+#define LV_API_CHART_AXIS_SECONDARY_Y_MAX_COORD 1000U
+
 /** @brief Horizontal and vertical line count for the chart */
 #define LV_API_CHART_HOR_LINE_COUNT 10U
 #define LV_API_CHART_VER_LINE_COUNT 16U
@@ -78,10 +82,10 @@ void lv_api_run(LvHandler * handler);
  *
  * @param handler A pointer to the LVGL handler structure
  * @param ch The channel to update the point to
- * @param values The array of new values
+ * @param values The array of new values in grid units
  * @param size The lenght of the array
  */
-void lv_api_update_points(LvHandler * handler, ChartHandlerChannel ch, int32_t * values, size_t size);
+void lv_api_update_points(LvHandler * handler, ChartHandlerChannel ch, float * values, size_t size);
 
 /**
  * @brief Update all the point of the chart on the display

@@ -10,24 +10,75 @@
 
 #include <string.h>
 
+#include "lvgl_api.h"
+
+
 void chart_handler_init(ChartHandler * handler, void * api) {
     if (handler == NULL || api == NULL)
         return;
+    memset(handler, 0U, sizeof(ChartHandler));
+
     handler->api = api;
     handler->x_scale = CHART_HANDLER_MIN_X_SCALE;
-    memset(handler->scale, CHART_HANDLER_MAX_Y_SCALE, CHART_HANDLER_CHANNEL_COUNT * sizeof(uint32_t));
-    memset(handler->offset, 0U, CHART_HANDLER_CHANNEL_COUNT * sizeof(int32_t));
-    memset(handler->index, 0U, CHART_HANDLER_CHANNEL_COUNT * sizeof(size_t));
-    memset(handler->data, 0U, CHART_HANDLER_CHANNEL_COUNT * CHART_HANDLER_SAMPLE_COUNT* sizeof(int32_t));
+    for (size_t i = 0; i < CHART_HANDLER_CHANNEL_COUNT; ++i)
+        handler->scale[i] = 2000.0f;
 }
 
-void chart_handler_add_point(ChartHandler * handler, ChartHandlerChannel ch, uint16_t value) {
+float chart_handler_get_offset(ChartHandler * handler, ChartHandlerChannel ch) {
+    if (handler == NULL)
+        return 0U;
+    return handler->offset[ch];
+}
+
+void chart_handler_set_offset(ChartHandler * handler, ChartHandlerChannel ch, float value) {
+    if (handler == NULL)
+        return;
+    handler->offset[ch] = value;
+}
+
+float chart_handler_get_scale(ChartHandler * handler, ChartHandlerChannel ch) {
+    if (handler == NULL)
+        return 0U;
+    return handler->scale[ch];
+}
+
+void chart_handler_set_scale(ChartHandler * handler, ChartHandlerChannel ch, float value) {
+    if (handler == NULL || value > CHART_HANDLER_MAX_Y_SCALE || value < CHART_HANDLER_MIN_Y_SCALE)
+        return;
+    handler->scale[ch] = value;
+}
+
+void chart_handler_add_point(ChartHandler * handler, ChartHandlerChannel ch, float value) {
+    if (handler == NULL)
+        return;
+    handler->raw[ch][handler->index[ch]] = value;
+    if ((++handler->index[ch]) >= CHART_HANDLER_SAMPLE_COUNT) {
+        handler->index[ch] = 0;
+        handler->ready[ch] = true;
+    }
+}
+
+// TODO: Match chart X axis with time
+void chart_handler_routine(ChartHandler * handler) {
     if (handler == NULL)
         return;
 
-    handler->data[ch][handler->index[ch]] = value / 65.535;
-    if ((++handler->index[ch]) >= CHART_HANDLER_SAMPLE_COUNT) {
-        handler->index[ch] = 0;
-        lv_api_update_points(handler->api, ch, handler->data[ch], CHART_HANDLER_SAMPLE_COUNT);
+    for (size_t ch = 0 ; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
+        if (handler->ready[ch]) {
+            for (size_t i = 0; i < CHART_HANDLER_SAMPLE_COUNT; ++i) {
+                float val = handler->raw[ch][i];
+
+                // Translate
+                val += handler->offset[ch];
+
+                // Convert to grid units
+                val /= (float)handler->scale[ch];
+
+                handler->data[ch][i] = val;
+            }
+
+            lv_api_update_points(handler->api, ch, handler->data[ch], CHART_HANDLER_SAMPLE_COUNT);
+            handler->ready[ch] = false;
+        }
     }
 }

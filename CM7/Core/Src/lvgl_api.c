@@ -12,6 +12,7 @@
 
 #include <string.h>
 
+#include "chart_handler.h"
 #include "lv_chart.h"
 #include "lvgl.h"
 #include "lvgl_colors.h"
@@ -115,8 +116,8 @@ void _lv_api_chart_init(LvHandler * handler) {
     lv_chart_set_point_count(handler->chart, LV_API_CHART_POINT_COUNT);
 
     // Set range values
-    lv_chart_set_range(handler->chart, LV_CHART_AXIS_PRIMARY_Y, 0, 1000);
-    lv_chart_set_range(handler->chart, LV_CHART_AXIS_SECONDARY_Y, 0, 1000);
+    lv_chart_set_range(handler->chart, LV_CHART_AXIS_PRIMARY_Y, 0, LV_API_CHART_AXIS_PRIMARY_Y_MAX_COORD);
+    lv_chart_set_range(handler->chart, LV_CHART_AXIS_SECONDARY_Y, 0, LV_API_CHART_AXIS_SECONDARY_Y_MAX_COORD);
 
     // Add series of points
     handler->series[CHART_HANDLER_CHANNEL_1] = lv_chart_add_series(handler->chart, LV_YELLOW, LV_CHART_AXIS_PRIMARY_Y);
@@ -185,20 +186,36 @@ void lv_api_run(LvHandler * handler) {
     if (handler == NULL)
         return;
 
+    chart_handler_routine(&handler->chart_handler);
+
     // Update LVGL internal status
     lv_timer_handler_run_in_period(5);
 }
 
-void lv_api_update_points(LvHandler * handler, ChartHandlerChannel ch, int32_t * values, size_t size) {
+void lv_api_update_points(LvHandler * handler, ChartHandlerChannel ch, float * values, size_t size) {
     if (handler == NULL || values == NULL)
         return;
 
     size_t j = 0;
-    const double dt = size / (double)LV_API_CHART_POINT_COUNT;
-    double t = 0;
+    float t = 0;
+    
+    const float div[CHART_HANDLER_CHANNEL_COUNT] = {
+        LV_API_CHART_AXIS_PRIMARY_Y_MAX_COORD / (float)LV_API_CHART_VER_LINE_COUNT,
+        LV_API_CHART_AXIS_SECONDARY_Y_MAX_COORD / (float)LV_API_CHART_VER_LINE_COUNT
+    };
+
+    const float dt = size / (float)LV_API_CHART_POINT_COUNT;
+    
     for (size_t i = 0; i < LV_API_CHART_POINT_COUNT; ++i) {
+        // Interpolate
         size_t k = (j >= CHART_HANDLER_SAMPLE_COUNT - 1) ? 0 : j + 1;
-        handler->channels[ch][i] = LERP(values[j], values[k], t);
+        float val = LERP(values[j], values[k], t);
+
+        // Convert to screen space
+        val *= div[ch];
+
+        // Copy value
+        handler->channels[ch][i] = val;
         t += dt;
         if (t >= 1) {
             t = 0;

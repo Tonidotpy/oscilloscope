@@ -52,6 +52,10 @@
 #define HSEM_ID_0 (0U) /* HW semaphore 0*/
 #endif
 
+#define ADC_RESOLUTION 16U
+#define ADC_VREF 3300.0f // in mV
+#define ADC_VALUE_TO_VOLTAGE(VAL) (((VAL) / (float)((1 << ADC_RESOLUTION) - 1.0f)) * ADC_VREF)
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -206,6 +210,12 @@ Error_Handler();
       (void *)LCD_FRAME_BUFFER_0_ADDRESS,
       LCD_FRAME_BUFFER_0_WIDTH
   );
+
+  char msg[128] = { 0 };
+  sprintf(msg, "Vertical offset CH1: %.2f\r\n", chart_handler_get_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1));
+  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
+  sprintf(msg, "Vertical scale CH1: %.2f\r\n\r\n", chart_handler_get_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1));
+  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
 
   /* USER CODE END 2 */
 
@@ -983,6 +993,8 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 void HAL_GPIO_EXTI_Callback(uint16_t pin) {
+    static char msg[128] = { 0 };
+
     if (pin == USER_BUTTON_Pin) {
         if (lcd_get_status() == LCD_ON) {
             lcd_off();
@@ -1003,16 +1015,36 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
         HAL_UART_Transmit(&huart1, (uint8_t *)"Joypad select\r\n", 15, 10);
     }
     else if (pin == JOY_DOWN_Pin) {
-        HAL_UART_Transmit(&huart1, (uint8_t *)"Joypad down\r\n", 13, 10);
+        float off = chart_handler_get_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
+        off -= 100.0f;
+        chart_handler_set_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, off);
+
+        sprintf(msg, "Offset: %.2f\r\n", off);
+        HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
     }
     else if (pin == JOY_RIGHT_Pin) {
-        HAL_UART_Transmit(&huart1, (uint8_t *)"Joypad right\r\n", 14, 10);
+        float scale = chart_handler_get_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
+        scale *= 2.0f;
+        chart_handler_set_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, scale);
+
+        sprintf(msg, "Scale: %.2f\r\n", scale);
+        HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
     }
     else if (pin == JOY_LEFT_Pin) {
-        HAL_UART_Transmit(&huart1, (uint8_t *)"Joypad left\r\n", 13, 10);
+        float scale = chart_handler_get_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
+        scale *= 0.5f;
+        chart_handler_set_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, scale);
+
+        sprintf(msg, "Scale: %.2f\r\n", scale);
+        HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
     }
     else if (pin == JOY_UP_Pin) {
-        HAL_UART_Transmit(&huart1, (uint8_t *)"Joypad up\r\n", 11, 10);
+        float off = chart_handler_get_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
+        off += 100.0f;
+        chart_handler_set_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, off);
+
+        sprintf(msg, "Offset: %.2f\r\n", off);
+        HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
     }
 }
 
@@ -1022,7 +1054,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim) {
     // if (HAL_ADC_PollForConversion(&hadc3, 1) == HAL_OK) {
     if ((hadc3.Instance->ISR & ADC_FLAG_EOC) == 0) {
         uint16_t value = HAL_ADC_GetValue(&hadc3);
-        chart_handler_add_point(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, value);
+        chart_handler_add_point(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, ADC_VALUE_TO_VOLTAGE(value));
     }
 }
 
