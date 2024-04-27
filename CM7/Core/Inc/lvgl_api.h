@@ -18,15 +18,15 @@
 #include "chart_handler.h"
 
 /** @brief Primary and secondary Y axis maximum coordinates for the chart */
-#define LV_API_CHART_AXIS_PRIMARY_Y_MAX_COORD 1000U
-#define LV_API_CHART_AXIS_SECONDARY_Y_MAX_COORD 1000U
+#define LV_API_CHART_AXIS_PRIMARY_Y_MAX_COORD 500U
+#define LV_API_CHART_AXIS_SECONDARY_Y_MAX_COORD 500U
 
 /** @brief Horizontal and vertical line count for the chart */
 #define LV_API_CHART_HOR_LINE_COUNT 10U
 #define LV_API_CHART_VER_LINE_COUNT 16U
 
 /** @brief Total number of points of the chart */
-#define LV_API_CHART_POINT_COUNT 2400U
+#define LV_API_CHART_POINT_COUNT 500U
 
 
 typedef struct {

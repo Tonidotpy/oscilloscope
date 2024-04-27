@@ -72,7 +72,7 @@ void chart_handler_routine(ChartHandler * handler) {
                 val += handler->offset[ch];
 
                 // Convert to grid units
-                val /= (float)handler->scale[ch];
+                val /= handler->scale[ch];
 
                 handler->data[ch][i] = val;
             }

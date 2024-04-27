@@ -13,7 +13,6 @@
 #include <string.h>
 
 #include "chart_handler.h"
-#include "lv_chart.h"
 #include "lvgl.h"
 #include "lvgl_colors.h"
 #include "stm32h7xx_hal_ltdc.h"
@@ -64,11 +63,6 @@ static void _lv_flush_callback(lv_display_t * display, const lv_area_t * area, u
 static void _lv_apply_theme(lv_theme_t * th, lv_obj_t * obj) {
     LV_UNUSED(th);
 
-    // static lv_style_t main_style;
-    // lv_style_init(&main_style);
-    // lv_style_set_bg_color(&main_style, LV_BLACK);
-    // lv_obj_add_style(obj, &main_style, LV_PART_MAIN);
-
     if (lv_obj_check_type(obj, &lv_chart_class)) {
         static lv_style_t chart_main_style;
         lv_style_init(&chart_main_style);
@@ -108,7 +102,7 @@ void _lv_api_chart_init(LvHandler * handler) {
     // Setup chart
     handler->chart = lv_chart_create(screen);
     lv_chart_set_type(handler->chart, LV_CHART_TYPE_LINE);
-    lv_obj_set_size(handler->chart, w, h);
+    lv_obj_set_size(handler->chart, w, h - 6);
     lv_obj_center(handler->chart);
 
     // Set point and line count
@@ -165,6 +159,11 @@ void lv_api_init(
     lv_indev_set_read_cb(handler->touch_screen, _lv_update_ts_indev_callback);
 
     // Initialize the theme and styles
+    static lv_style_t main_style;
+    lv_style_init(&main_style);
+    lv_style_set_bg_color(&main_style, LV_BLACK);
+    lv_obj_add_style(lv_display_get_screen_active(handler->display), &main_style, LV_PART_MAIN);
+
     lv_theme_t * simple_theme = lv_display_get_theme(handler->display);
     handler->theme = *simple_theme;
     lv_theme_set_parent(&handler->theme, simple_theme);
@@ -208,7 +207,7 @@ void lv_api_update_points(LvHandler * handler, ChartHandlerChannel ch, float * v
     
     for (size_t i = 0; i < LV_API_CHART_POINT_COUNT; ++i) {
         // Interpolate
-        size_t k = (j >= CHART_HANDLER_SAMPLE_COUNT - 1) ? 0 : j + 1;
+        size_t k = (j >= CHART_HANDLER_SAMPLE_COUNT - 1) ? j : j + 1;
         float val = LERP(values[j], values[k], t);
 
         // Convert to screen space
