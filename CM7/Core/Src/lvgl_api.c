@@ -198,7 +198,6 @@ void lv_api_update_points(
     if (handler == NULL || values == NULL)
         return;
 
-    size_t j = 0;
     float t = 0;
     
     const float div[CHART_HANDLER_CHANNEL_COUNT] = {
@@ -206,23 +205,30 @@ void lv_api_update_points(
         CHART_AXIS_SECONDARY_Y_MAX_COORD / (float)(CHART_HORIZONTAL_LINE_COUNT - 1U)
     };
 
-    const float dt = size / (float)CHART_POINT_COUNT;
+    const float x_div = CHART_POINT_COUNT / (float)(CHART_VERTICAL_LINE_COUNT - 1U);
+    const float sample_time = 1000.0f; // sample time in us
+    const float px_per_div = handler->chart_handler.x_scale[ch] / sample_time;
+    const float dt = px_per_div / x_div;
     
-    for (size_t i = 0; i < CHART_POINT_COUNT; ++i) {
+    size_t prev_k = 0;
+    for (size_t x = 0; x < CHART_POINT_COUNT; ++x) {
+        size_t k = (x / x_div) * px_per_div;
+        size_t j = LV_MIN(size - 1, k + 1);
+
+        if (k != prev_k) {
+            prev_k = k;
+            t = 0;
+        }
+
         // Interpolate
-        size_t k = (j >= CHART_SAMPLE_COUNT - 1) ? j : j + 1;
-        float val = LERP(values[j], values[k], t);
+        float val = values[k]; // LERP(values[k], values[j], t);
+        t += dt;
 
         // Convert to screen space
         val *= div[ch];
 
         // Copy value
-        handler->channels[ch][i] = val;
-        t += dt;
-        if (t >= 1) {
-            t = 0;
-            ++j;
-        }
+        handler->channels[ch][x] = val;
     }
 
     lv_chart_refresh(handler->chart);

@@ -61,7 +61,6 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc2;
-DMA_HandleTypeDef hdma_adc2;
 
 CRC_HandleTypeDef hcrc;
 
@@ -88,10 +87,9 @@ static LvHandler lv_handler;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_USART1_UART_Init(void);
 static void MX_DSIHOST_DSI_Init(void);
 static void MX_LTDC_Init(void);
-static void MX_DMA_Init(void);
+static void MX_USART1_UART_Init(void);
 static void MX_I2C4_Init(void);
 static void MX_DMA2D_Init(void);
 static void MX_CRC_Init(void);
@@ -164,10 +162,9 @@ Error_Handler();
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_USART1_UART_Init();
   MX_DSIHOST_DSI_Init();
   MX_LTDC_Init();
+  MX_USART1_UART_Init();
   MX_I2C4_Init();
   MX_DMA2D_Init();
   MX_CRC_Init();
@@ -223,6 +220,7 @@ Error_Handler();
   // HAL_ADC_Start_DMA(&hadc2, (uint32_t *)&lv_handler.chart_handler.raw[CHART_HANDLER_CHANNEL_1], 2U); 
 
   // Start timer and ADC conversion
+  HAL_ADC_Start(&hadc2);
   HAL_TIM_Base_Start_IT(&htim7);
 
   uint32_t timestamp = 0;
@@ -344,15 +342,15 @@ static void MX_ADC2_Init(void)
   hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
   hadc2.Init.Resolution = ADC_RESOLUTION_16B;
   hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc2.Init.EOCSelection = ADC_EOC_SEQ_CONV;
+  hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
   hadc2.Init.LowPowerAutoWait = DISABLE;
   hadc2.Init.ContinuousConvMode = DISABLE;
   hadc2.Init.NbrOfConversion = 1;
   hadc2.Init.DiscontinuousConvMode = DISABLE;
   hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc2.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DMA_CIRCULAR;
-  hadc2.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+  hadc2.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DR;
+  hadc2.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
   hadc2.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
   hadc2.Init.OversamplingMode = DISABLE;
   if (HAL_ADC_Init(&hadc2) != HAL_OK)
@@ -364,7 +362,7 @@ static void MX_ADC2_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_64CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_16CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
@@ -757,22 +755,6 @@ static void MX_USART1_UART_Init(void)
 
 }
 
-/**
-  * Enable DMA controller clock
-  */
-static void MX_DMA_Init(void)
-{
-
-  /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
-
-  /* DMA interrupt init */
-  /* DMA1_Stream0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
-
-}
-
 /* FMC initialization function */
 void MX_FMC_Init(void)
 {
@@ -1028,12 +1010,21 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
         HAL_UART_Transmit(&huart1, (uint8_t *)"Joypad select\r\n", 15, 10);
     }
     else if (pin == JOY_DOWN_Pin) {
+        float scale = chart_handler_get_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
+        scale *= 0.5f;
+        chart_handler_set_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, scale);
+
+        sprintf(msg, "X scale: %.2f\r\n", scale);
+        HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
+        
+        /*
         float off = chart_handler_get_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
         off -= 100.0f;
         chart_handler_set_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, off);
 
         sprintf(msg, "Offset: %.2f\r\n", off);
         HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
+        */
     }
     else if (pin == JOY_RIGHT_Pin) {
         float scale = chart_handler_get_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
@@ -1052,23 +1043,32 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
         HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
     }
     else if (pin == JOY_UP_Pin) {
+        float scale = chart_handler_get_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
+        scale *= 2.0f;
+        chart_handler_set_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, scale);
+
+        sprintf(msg, "X scale: %.2f\r\n", scale);
+        HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
+
+        /*
         float off = chart_handler_get_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
         off += 100.0f;
         chart_handler_set_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, off);
 
         sprintf(msg, "Offset: %.2f\r\n", off);
         HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
+        */
     }
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim) {
-    // Check if conversion has ended
-    HAL_ADC_Start(&hadc2);
-
     // Poll for conversion
-    if ((hadc2.Instance->ISR & ADC_FLAG_EOC) == 0) {
+    // if ((hadc2.Instance->ISR & ADC_FLAG_EOC) == 0) {
+    if (HAL_ADC_PollForConversion(&hadc2, 1) == HAL_OK) {
         uint16_t value = HAL_ADC_GetValue(&hadc2);
         chart_handler_add_point(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, ADC_VALUE_TO_VOLTAGE(value));
+
+        HAL_ADC_Start(&hadc2);
     }
 }
 
@@ -1118,5 +1118,3 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-
-

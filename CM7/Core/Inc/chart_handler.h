@@ -29,6 +29,7 @@ typedef struct {
     float x_scale[CHART_HANDLER_CHANNEL_COUNT]; // in us
     float scale[CHART_HANDLER_CHANNEL_COUNT]; // in mV
 
+    float x_offset[CHART_HANDLER_CHANNEL_COUNT]; // in us
     float offset[CHART_HANDLER_CHANNEL_COUNT]; // in mV
  
     bool ready[CHART_HANDLER_CHANNEL_COUNT];
@@ -83,6 +84,25 @@ float chart_handler_get_scale(ChartHandler * handler, ChartHandlerChannel ch);
  * @param The value of the scale in mV
  */
 void chart_handler_set_scale(ChartHandler * handler, ChartHandlerChannel ch, float value);
+
+/**
+ * @brief Get the current time scale of a single channel
+ *
+ * @param handler A pointer to the chart handler structure
+ * @param ch The channel to get the scale from
+ *
+ * @return float The scale in us
+ */
+float chart_handler_get_x_scale(ChartHandler * handler, ChartHandlerChannel ch);
+
+/**
+ * @brief Set the time scale in us of a single channel
+ *
+ * @param handler A pointer to the chart handler structure
+ * @ch The channel to modify
+ * @param The value of the scale in us
+ */
+void chart_handler_set_x_scale(ChartHandler * handler, ChartHandlerChannel ch, float value);
 
 /**
  * @brief Add a point in the chart on the selected channel

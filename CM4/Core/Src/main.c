@@ -53,7 +53,6 @@ DAC_HandleTypeDef hdac1;
 
 /* Private function prototypes -----------------------------------------------*/
 static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
 static void MX_DAC1_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -104,7 +103,6 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_DAC1_Init();
   /* USER CODE BEGIN 2 */
 
@@ -172,17 +170,6 @@ static void MX_DAC1_Init(void)
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
 
   /* USER CODE END DAC1_Init 2 */
-
-}
-
-/**
-  * Enable DMA controller clock
-  */
-static void MX_DMA_Init(void)
-{
-
-  /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
 
 }
 

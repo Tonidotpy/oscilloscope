@@ -20,7 +20,7 @@ void chart_handler_init(ChartHandler * handler, void * api) {
 
     handler->api = api;
     for (size_t i = 0; i < CHART_HANDLER_CHANNEL_COUNT; ++i) {
-        handler->x_scale[i] = CHART_MIN_X_SCALE;
+        handler->x_scale[i] = 5000.0f; // CHART_MIN_X_SCALE;
         handler->scale[i] = 1000.0f;
     }
 }
@@ -47,6 +47,18 @@ void chart_handler_set_scale(ChartHandler * handler, ChartHandlerChannel ch, flo
     if (handler == NULL || value > CHART_MAX_Y_SCALE || value < CHART_MIN_Y_SCALE)
         return;
     handler->scale[ch] = value;
+}
+
+float chart_handler_get_x_scale(ChartHandler * handler, ChartHandlerChannel ch) {
+    if (handler == NULL)
+        return 0U;
+    return handler->x_scale[ch];
+}
+
+void chart_handler_set_x_scale(ChartHandler * handler, ChartHandlerChannel ch, float value) {
+    if (handler == NULL || value > CHART_MAX_X_SCALE || value < CHART_MIN_X_SCALE)
+        return;
+    handler->x_scale[ch] = value;
 }
 
 void chart_handler_add_point(ChartHandler * handler, ChartHandlerChannel ch, float value) {
