@@ -46,7 +46,6 @@
 /* Private variables ---------------------------------------------------------*/
 
 DAC_HandleTypeDef hdac1;
-DMA_HandleTypeDef hdma_dac1_ch1;
 
 /* USER CODE BEGIN PV */
 
@@ -118,7 +117,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, (uint32_t)(waves_table[0][ind % 120] / 16));
+    HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, (uint32_t)(waves_table[WAVES_TYPE_SINE][ind % WAVES_SIZE] / 16));
 
     if (HAL_GetTick() - freq >= 10) {
         ind++;
@@ -184,11 +183,6 @@ static void MX_DMA_Init(void)
 
   /* DMA controller clock enable */
   __HAL_RCC_DMA1_CLK_ENABLE();
-
-  /* DMA interrupt init */
-  /* DMA1_Stream1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
 
 }
 

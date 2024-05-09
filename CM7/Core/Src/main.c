@@ -31,11 +31,7 @@
 #include "config.h"
 #include "lcd.h"
 #include "lvgl_api.h"
-#include "stm32h7xx_hal.h"
 #include "stm32h7xx_hal_adc.h"
-#include "stm32h7xx_hal_def.h"
-#include "stm32h7xx_hal_tim.h"
-#include "stm32h7xx_hal_uart.h"
 #include "touch_screen.h"
 
 /* USER CODE END Includes */
@@ -52,8 +48,8 @@
 #define HSEM_ID_0 (0U) /* HW semaphore 0*/
 #endif
 
-#define ADC_RESOLUTION 16U
-#define ADC_VREF 3300.0f // in mV
+#define ADC_RESOLUTION (16U)
+#define ADC_VREF (3300.0f) // in mV
 #define ADC_VALUE_TO_VOLTAGE(VAL) (((VAL) / (float)((1 << ADC_RESOLUTION) - 1.0f)) * ADC_VREF)
 
 /* USER CODE END PD */
@@ -64,7 +60,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-ADC_HandleTypeDef hadc3;
+ADC_HandleTypeDef hadc2;
+DMA_HandleTypeDef hdma_adc2;
 
 CRC_HandleTypeDef hcrc;
 
@@ -91,16 +88,16 @@ static LvHandler lv_handler;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
-static void MX_CRC_Init(void);
 static void MX_USART1_UART_Init(void);
-static void MX_FMC_Init(void);
-static void MX_DMA2D_Init(void);
 static void MX_DSIHOST_DSI_Init(void);
-static void MX_I2C4_Init(void);
-static void MX_ADC3_Init(void);
 static void MX_LTDC_Init(void);
+static void MX_DMA_Init(void);
+static void MX_I2C4_Init(void);
+static void MX_DMA2D_Init(void);
+static void MX_CRC_Init(void);
 static void MX_TIM7_Init(void);
+static void MX_ADC2_Init(void);
+static void MX_FMC_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -122,13 +119,6 @@ int main(void)
 /* USER CODE BEGIN Boot_Mode_Sequence_0 */
   int32_t timeout;
 /* USER CODE END Boot_Mode_Sequence_0 */
-/* Enable the CPU Cache */
-
-  /* Enable I-Cache---------------------------------------------------------*/
-  SCB_EnableICache();
-
-  /* Enable D-Cache---------------------------------------------------------*/
-  SCB_EnableDCache();
 
 /* USER CODE BEGIN Boot_Mode_Sequence_1 */
   /* Wait until CPU2 boots and enters in stop mode or timeout*/
@@ -175,15 +165,15 @@ Error_Handler();
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_CRC_Init();
   MX_USART1_UART_Init();
-  MX_FMC_Init();
-  MX_DMA2D_Init();
   MX_DSIHOST_DSI_Init();
-  MX_I2C4_Init();
-  MX_ADC3_Init();
   MX_LTDC_Init();
+  MX_I2C4_Init();
+  MX_DMA2D_Init();
+  MX_CRC_Init();
   MX_TIM7_Init();
+  MX_ADC2_Init();
+  MX_FMC_Init();
   /* USER CODE BEGIN 2 */
 
   // Clear frame buffer memory
@@ -224,18 +214,35 @@ Error_Handler();
 
   // Start ADC conversion with timer and DMA
   // BUG: DMA not working correctly
-  // HAL_ADC_Start_DMA(&hadc3, (uint32_t *)lv_handler.ch1_data, 1);
+  // HAL_ADCEx_Calibration_Start(&hadc3, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
+  // HAL_Delay(10);
+  // HAL_ADC_Start_DMA(&hadc3, (uint32_t *)lv_handler.chart_handler.raw[CHART_HANDLER_CHANNEL_1], CHART_HANDLER_SAMPLE_COUNT); 
   
+  // static uint16_t a[10U];
+  // HAL_ADC_Start_DMA(&hadc2, (uint32_t *)&a, 2U); 
+  // HAL_ADC_Start_DMA(&hadc2, (uint32_t *)&lv_handler.chart_handler.raw[CHART_HANDLER_CHANNEL_1], 2U); 
+
   // Start timer and ADC conversion
   HAL_TIM_Base_Start_IT(&htim7);
 
   uint32_t timestamp = 0;
-
+  // size_t cnt = 0;
   while (1)
   {
     if (HAL_GetTick() - timestamp >= 500) {
         HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
         timestamp = HAL_GetTick(); 
+
+        // uint32_t status = HAL_ADC_GetError(&hadc3);
+        // char msg[128];
+        // sprintf(msg, "Valore: %d\r\n", status);
+        // HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
+    
+        // HAL_ADC_Start_DMA(&hadc3, (uint32_t *)lv_handler.chart_handler.raw[CHART_HANDLER_CHANNEL_1], 1); 
+        // if (++cnt == 10) {
+        //     cnt = 0;
+        //     lv_handler.chart_handler.ready[CHART_HANDLER_CHANNEL_1] = true;
+        // }
     }
 
     lv_api_run(&lv_handler);
@@ -314,60 +321,61 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief ADC3 Initialization Function
+  * @brief ADC2 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_ADC3_Init(void)
+static void MX_ADC2_Init(void)
 {
 
-  /* USER CODE BEGIN ADC3_Init 0 */
+  /* USER CODE BEGIN ADC2_Init 0 */
 
-  /* USER CODE END ADC3_Init 0 */
+  /* USER CODE END ADC2_Init 0 */
 
   ADC_ChannelConfTypeDef sConfig = {0};
 
-  /* USER CODE BEGIN ADC3_Init 1 */
+  /* USER CODE BEGIN ADC2_Init 1 */
 
-  /* USER CODE END ADC3_Init 1 */
+  /* USER CODE END ADC2_Init 1 */
 
   /** Common config
   */
-  hadc3.Instance = ADC3;
-  hadc3.Init.Resolution = ADC_RESOLUTION_16B;
-  hadc3.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc3.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-  hadc3.Init.LowPowerAutoWait = DISABLE;
-  hadc3.Init.ContinuousConvMode = DISABLE;
-  hadc3.Init.NbrOfConversion = 1;
-  hadc3.Init.DiscontinuousConvMode = DISABLE;
-  hadc3.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc3.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc3.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DR;
-  hadc3.Init.Overrun = ADC_OVR_DATA_PRESERVED;
-  hadc3.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
-  hadc3.Init.OversamplingMode = DISABLE;
-  if (HAL_ADC_Init(&hadc3) != HAL_OK)
+  hadc2.Instance = ADC2;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
+  hadc2.Init.Resolution = ADC_RESOLUTION_16B;
+  hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc2.Init.EOCSelection = ADC_EOC_SEQ_CONV;
+  hadc2.Init.LowPowerAutoWait = DISABLE;
+  hadc2.Init.ContinuousConvMode = DISABLE;
+  hadc2.Init.NbrOfConversion = 1;
+  hadc2.Init.DiscontinuousConvMode = DISABLE;
+  hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc2.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DMA_CIRCULAR;
+  hadc2.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+  hadc2.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
+  hadc2.Init.OversamplingMode = DISABLE;
+  if (HAL_ADC_Init(&hadc2) != HAL_OK)
   {
     Error_Handler();
   }
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_8CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_64CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
   sConfig.OffsetSignedSaturation = DISABLE;
-  if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)
+  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN ADC3_Init 2 */
+  /* USER CODE BEGIN ADC2_Init 2 */
 
-  /* USER CODE END ADC3_Init 2 */
+  /* USER CODE END ADC2_Init 2 */
 
 }
 
@@ -758,6 +766,11 @@ static void MX_DMA_Init(void)
   /* DMA controller clock enable */
   __HAL_RCC_DMA1_CLK_ENABLE();
 
+  /* DMA interrupt init */
+  /* DMA1_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+
 }
 
 /* FMC initialization function */
@@ -807,7 +820,7 @@ void MX_FMC_Init(void)
   HAL_StatusTypeDef res = HAL_OK;
 
   char msg[100] = "\r\n*** SDRAM INITIALIZATION ***\r\n";
-  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 10);
+  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 20);
 
   // Configure a clock configuration enable command
   FMC_SDRAM_CommandTypeDef cmd = {
@@ -821,7 +834,7 @@ void MX_FMC_Init(void)
   HAL_Delay(1); // A minimum of 100 us delay is require for the previous command
 
   sprintf(msg, "* Enable command: %d\r\n", res);
-  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 10);
+  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 20);
     
   // Configure a PALL (precharge all) command
   cmd.CommandMode = FMC_SDRAM_CMD_PALL;
@@ -829,7 +842,7 @@ void MX_FMC_Init(void)
       Error_Handler();
 
   sprintf(msg, "* PALL command: %d\r\n", res);
-  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 10);
+  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 20);
 
   // Configure auto refresh command
   cmd.CommandMode = FMC_SDRAM_CMD_AUTOREFRESH_MODE;
@@ -838,7 +851,7 @@ void MX_FMC_Init(void)
       Error_Handler();
 
   sprintf(msg, "* Auto refresh command: %d\r\n", res);
-  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 10);
+  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 20);
 
   // Program the external memory mode register
   cmd.CommandMode = FMC_SDRAM_CMD_LOAD_MODE;
@@ -847,7 +860,7 @@ void MX_FMC_Init(void)
       Error_Handler();
 
   sprintf(msg, "* External memory command: %d\r\n", res);
-  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 10);
+  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 20);
 
   // Set the refresh rate counter
   /* 
@@ -861,10 +874,10 @@ void MX_FMC_Init(void)
       Error_Handler();
 
   sprintf(msg, "* Refresh rate command: %d\r\n", res);
-  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 10);
+  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 20);
   
   sprintf(msg, "****************************\r\n\r\n");
-  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 10);
+  HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 20);
 
   HAL_GPIO_WritePin(LED_ORANGE_GPIO_Port, LED_ORANGE_Pin, GPIO_PIN_RESET);
 
@@ -1050,16 +1063,24 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim) {
     // Check if conversion has ended
-    HAL_ADC_Start(&hadc3);
-    // if (HAL_ADC_PollForConversion(&hadc3, 1) == HAL_OK) {
-    if ((hadc3.Instance->ISR & ADC_FLAG_EOC) == 0) {
-        uint16_t value = HAL_ADC_GetValue(&hadc3);
+    HAL_ADC_Start(&hadc2);
+
+    // Poll for conversion
+    if ((hadc2.Instance->ISR & ADC_FLAG_EOC) == 0) {
+        uint16_t value = HAL_ADC_GetValue(&hadc2);
         chart_handler_add_point(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, ADC_VALUE_TO_VOLTAGE(value));
     }
 }
 
+void HAL_ADC_ErrorCallback(ADC_HandleTypeDef * hadc) {
+    HAL_UART_Transmit(&huart1, (uint8_t *)"Error\r\n", 7U, 30);
+}
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef * hadc) {
+    HAL_UART_Transmit(&huart1, (uint8_t *)"Half...\r\n", 9U, 30);
+}
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef * hadc) {
-
+    HAL_UART_Transmit(&huart1, (uint8_t *)"Complete\r\n", 10U, 30);
+    lv_handler.chart_handler.ready[CHART_HANDLER_CHANNEL_1] = true;
 }
 
 /* USER CODE END 4 */
@@ -1097,3 +1118,5 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
+

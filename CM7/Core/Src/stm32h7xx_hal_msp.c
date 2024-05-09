@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
+extern DMA_HandleTypeDef hdma_adc2;
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
@@ -85,11 +86,11 @@ void HAL_MspInit(void)
 void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
 {
   RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
-  if(hadc->Instance==ADC3)
+  if(hadc->Instance==ADC2)
   {
-  /* USER CODE BEGIN ADC3_MspInit 0 */
+  /* USER CODE BEGIN ADC2_MspInit 0 */
 
-  /* USER CODE END ADC3_MspInit 0 */
+  /* USER CODE END ADC2_MspInit 0 */
 
   /** Initializes the peripherals clock
   */
@@ -109,17 +110,39 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     }
 
     /* Peripheral clock enable */
-    __HAL_RCC_ADC3_CLK_ENABLE();
+    __HAL_RCC_ADC12_CLK_ENABLE();
 
-    __HAL_RCC_GPIOC_CLK_ENABLE();
-    /**ADC3 GPIO Configuration
-    PC3_C     ------> ADC3_INP1
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    /**ADC2 GPIO Configuration
+    PA0_C     ------> ADC2_INP0
     */
-    HAL_SYSCFG_AnalogSwitchConfig(SYSCFG_SWITCH_PC3, SYSCFG_SWITCH_PC3_OPEN);
+    HAL_SYSCFG_AnalogSwitchConfig(SYSCFG_SWITCH_PA0, SYSCFG_SWITCH_PA0_OPEN);
 
-  /* USER CODE BEGIN ADC3_MspInit 1 */
+    /* ADC2 DMA Init */
+    /* ADC2 Init */
+    hdma_adc2.Instance = DMA1_Stream0;
+    hdma_adc2.Init.Request = DMA_REQUEST_ADC2;
+    hdma_adc2.Init.Direction = DMA_PERIPH_TO_MEMORY;
+    hdma_adc2.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_adc2.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_adc2.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
+    hdma_adc2.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_adc2.Init.Mode = DMA_CIRCULAR;
+    hdma_adc2.Init.Priority = DMA_PRIORITY_LOW;
+    hdma_adc2.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    if (HAL_DMA_Init(&hdma_adc2) != HAL_OK)
+    {
+      Error_Handler();
+    }
 
-  /* USER CODE END ADC3_MspInit 1 */
+    __HAL_LINKDMA(hadc,DMA_Handle,hdma_adc2);
+
+    /* ADC2 interrupt Init */
+    HAL_NVIC_SetPriority(ADC_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(ADC_IRQn);
+  /* USER CODE BEGIN ADC2_MspInit 1 */
+
+  /* USER CODE END ADC2_MspInit 1 */
   }
 
 }
@@ -132,17 +155,22 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
 */
 void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
 {
-  if(hadc->Instance==ADC3)
+  if(hadc->Instance==ADC2)
   {
-  /* USER CODE BEGIN ADC3_MspDeInit 0 */
+  /* USER CODE BEGIN ADC2_MspDeInit 0 */
 
-  /* USER CODE END ADC3_MspDeInit 0 */
+  /* USER CODE END ADC2_MspDeInit 0 */
     /* Peripheral clock disable */
-    __HAL_RCC_ADC3_CLK_DISABLE();
+    __HAL_RCC_ADC12_CLK_DISABLE();
 
-  /* USER CODE BEGIN ADC3_MspDeInit 1 */
+    /* ADC2 DMA DeInit */
+    HAL_DMA_DeInit(hadc->DMA_Handle);
 
-  /* USER CODE END ADC3_MspDeInit 1 */
+    /* ADC2 interrupt DeInit */
+    HAL_NVIC_DisableIRQ(ADC_IRQn);
+  /* USER CODE BEGIN ADC2_MspDeInit 1 */
+
+  /* USER CODE END ADC2_MspDeInit 1 */
   }
 
 }

@@ -12,11 +12,9 @@
 
 #include <string.h>
 
-#include "chart_handler.h"
 #include "lvgl.h"
 #include "lvgl_colors.h"
 #include "stm32h7xx_hal_ltdc.h"
-#include "touch_screen.h"
 
 #define LERP(A, B, T) ((A) * (1.0 - T) + (B) * (T))
 
@@ -106,12 +104,12 @@ void _lv_api_chart_init(LvHandler * handler) {
     lv_obj_center(handler->chart);
 
     // Set point and line count
-    lv_chart_set_div_line_count(handler->chart, LV_API_CHART_HOR_LINE_COUNT, LV_API_CHART_VER_LINE_COUNT);
-    lv_chart_set_point_count(handler->chart, LV_API_CHART_POINT_COUNT);
+    lv_chart_set_div_line_count(handler->chart, CHART_HORIZONTAL_LINE_COUNT, CHART_VERTICAL_LINE_COUNT);
+    lv_chart_set_point_count(handler->chart, CHART_POINT_COUNT);
 
     // Set range values
-    lv_chart_set_range(handler->chart, LV_CHART_AXIS_PRIMARY_Y, 0, LV_API_CHART_AXIS_PRIMARY_Y_MAX_COORD);
-    lv_chart_set_range(handler->chart, LV_CHART_AXIS_SECONDARY_Y, 0, LV_API_CHART_AXIS_SECONDARY_Y_MAX_COORD);
+    lv_chart_set_range(handler->chart, LV_CHART_AXIS_PRIMARY_Y, 0, CHART_AXIS_PRIMARY_Y_MAX_COORD);
+    lv_chart_set_range(handler->chart, LV_CHART_AXIS_SECONDARY_Y, 0, CHART_AXIS_SECONDARY_Y_MAX_COORD);
 
     // Add series of points
     handler->series[CHART_HANDLER_CHANNEL_1] = lv_chart_add_series(handler->chart, LV_YELLOW, LV_CHART_AXIS_PRIMARY_Y);
@@ -137,7 +135,7 @@ void lv_api_init(
         return;
     // Set channels data to 0
     for (size_t i = 0; i < CHART_HANDLER_CHANNEL_COUNT; ++i)
-        memset(handler->channels[i], LV_CHART_POINT_NONE, LV_API_CHART_POINT_COUNT * sizeof(int32_t));
+        memset(handler->channels[i], LV_CHART_POINT_NONE, CHART_POINT_COUNT * sizeof(int32_t));
 
     // Init LVGL
     lv_init();
@@ -191,7 +189,12 @@ void lv_api_run(LvHandler * handler) {
     lv_timer_handler_run_in_period(5);
 }
 
-void lv_api_update_points(LvHandler * handler, ChartHandlerChannel ch, float * values, size_t size) {
+void lv_api_update_points(
+    LvHandler * handler,
+    ChartHandlerChannel ch,
+    float * values,
+    size_t size)
+{
     if (handler == NULL || values == NULL)
         return;
 
@@ -199,15 +202,15 @@ void lv_api_update_points(LvHandler * handler, ChartHandlerChannel ch, float * v
     float t = 0;
     
     const float div[CHART_HANDLER_CHANNEL_COUNT] = {
-        LV_API_CHART_AXIS_PRIMARY_Y_MAX_COORD / (float)LV_API_CHART_VER_LINE_COUNT,
-        LV_API_CHART_AXIS_SECONDARY_Y_MAX_COORD / (float)LV_API_CHART_VER_LINE_COUNT
+        CHART_AXIS_PRIMARY_Y_MAX_COORD / (float)(CHART_HORIZONTAL_LINE_COUNT - 1U),
+        CHART_AXIS_SECONDARY_Y_MAX_COORD / (float)(CHART_HORIZONTAL_LINE_COUNT - 1U)
     };
 
-    const float dt = size / (float)LV_API_CHART_POINT_COUNT;
+    const float dt = size / (float)CHART_POINT_COUNT;
     
-    for (size_t i = 0; i < LV_API_CHART_POINT_COUNT; ++i) {
+    for (size_t i = 0; i < CHART_POINT_COUNT; ++i) {
         // Interpolate
-        size_t k = (j >= CHART_HANDLER_SAMPLE_COUNT - 1) ? j : j + 1;
+        size_t k = (j >= CHART_SAMPLE_COUNT - 1) ? j : j + 1;
         float val = LERP(values[j], values[k], t);
 
         // Convert to screen space

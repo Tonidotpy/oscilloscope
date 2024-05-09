@@ -19,9 +19,10 @@ void chart_handler_init(ChartHandler * handler, void * api) {
     memset(handler, 0U, sizeof(ChartHandler));
 
     handler->api = api;
-    handler->x_scale = CHART_HANDLER_MIN_X_SCALE;
-    for (size_t i = 0; i < CHART_HANDLER_CHANNEL_COUNT; ++i)
-        handler->scale[i] = 2000.0f;
+    for (size_t i = 0; i < CHART_HANDLER_CHANNEL_COUNT; ++i) {
+        handler->x_scale[i] = CHART_MIN_X_SCALE;
+        handler->scale[i] = 1000.0f;
+    }
 }
 
 float chart_handler_get_offset(ChartHandler * handler, ChartHandlerChannel ch) {
@@ -43,7 +44,7 @@ float chart_handler_get_scale(ChartHandler * handler, ChartHandlerChannel ch) {
 }
 
 void chart_handler_set_scale(ChartHandler * handler, ChartHandlerChannel ch, float value) {
-    if (handler == NULL || value > CHART_HANDLER_MAX_Y_SCALE || value < CHART_HANDLER_MIN_Y_SCALE)
+    if (handler == NULL || value > CHART_MAX_Y_SCALE || value < CHART_MIN_Y_SCALE)
         return;
     handler->scale[ch] = value;
 }
@@ -52,7 +53,7 @@ void chart_handler_add_point(ChartHandler * handler, ChartHandlerChannel ch, flo
     if (handler == NULL)
         return;
     handler->raw[ch][handler->index[ch]] = value;
-    if ((++handler->index[ch]) >= CHART_HANDLER_SAMPLE_COUNT) {
+    if ((++handler->index[ch]) >= CHART_SAMPLE_COUNT) {
         handler->index[ch] = 0;
         handler->ready[ch] = true;
     }
@@ -65,7 +66,7 @@ void chart_handler_routine(ChartHandler * handler) {
 
     for (size_t ch = 0 ; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
         if (handler->ready[ch]) {
-            for (size_t i = 0; i < CHART_HANDLER_SAMPLE_COUNT; ++i) {
+            for (size_t i = 0; i < CHART_SAMPLE_COUNT; ++i) {
                 float val = handler->raw[ch][i];
 
                 // Translate
@@ -77,8 +78,18 @@ void chart_handler_routine(ChartHandler * handler) {
                 handler->data[ch][i] = val;
             }
 
-            lv_api_update_points(handler->api, ch, handler->data[ch], CHART_HANDLER_SAMPLE_COUNT);
+            lv_api_update_points(handler->api, ch, handler->data[ch], CHART_SAMPLE_COUNT);
             handler->ready[ch] = false;
         }
     }
+}
+
+void chart_handler_invalidate(ChartHandler * handler, ChartHandlerChannel ch) {
+    if (handler == NULL)
+        return;
+
+    // Reset data
+    handler->ready[ch] = false;
+    memset(handler->raw[ch], 0U, CHART_SAMPLE_COUNT * sizeof(handler->raw[ch][0U]));
+    memset(handler->data[ch], 0U, CHART_SAMPLE_COUNT * sizeof(handler->data[ch][0U]));
 }

@@ -92,6 +92,9 @@ flash:
 	cd CM4 && $(MAKE) flash
 	cd CM7 && $(MAKE) flash
 
+# Work only with CM7
+debug:
+	cd CM7 && $(MAKE) debug
 
 
 #######################################

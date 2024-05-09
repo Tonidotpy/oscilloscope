@@ -13,13 +13,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#define CHART_HANDLER_SAMPLE_COUNT (100U)
+#include "config.h"
 
-#define CHART_HANDLER_MIN_X_SCALE (1000.0f) // in us
-#define CHART_HANDLER_MAX_X_SCALE (100000.0f) // in us
-
-#define CHART_HANDLER_MIN_Y_SCALE (10.0f) // in mV
-#define CHART_HANDLER_MAX_Y_SCALE (10000.0f) // in mV
 
 /** @brief Available channels of the oscilloscope */
 typedef enum {
@@ -31,21 +26,21 @@ typedef enum {
 typedef struct {
     void * api;
 
-    float x_scale; // in us
+    float x_scale[CHART_HANDLER_CHANNEL_COUNT]; // in us
     float scale[CHART_HANDLER_CHANNEL_COUNT]; // in mV
 
     float offset[CHART_HANDLER_CHANNEL_COUNT]; // in mV
  
     bool ready[CHART_HANDLER_CHANNEL_COUNT];
     size_t index[CHART_HANDLER_CHANNEL_COUNT];
-    uint16_t raw[CHART_HANDLER_CHANNEL_COUNT][CHART_HANDLER_SAMPLE_COUNT];
-    float data[CHART_HANDLER_CHANNEL_COUNT][CHART_HANDLER_SAMPLE_COUNT];
+    float raw[CHART_HANDLER_CHANNEL_COUNT][CHART_SAMPLE_COUNT] __attribute__((aligned(16)));
+    float data[CHART_HANDLER_CHANNEL_COUNT][CHART_SAMPLE_COUNT];
 } ChartHandler;
 
 /**
  * @brief Initialize the chart handler
  * 
- * @param handler A pointer to the char handler structure
+ * @param handler A pointer to the chart handler structure
  * @param api A pointer to an LVGL api handler structure
  */
 void chart_handler_init(ChartHandler * handler, void * api);
@@ -92,7 +87,7 @@ void chart_handler_set_scale(ChartHandler * handler, ChartHandlerChannel ch, flo
 /**
  * @brief Add a point in the chart on the selected channel
  *
- * @param handler A pointer to the char handler structure
+ * @param handler A pointer to the chart handler structure
  * @param ch The channel to add the point to
  * @param value The converted value in mV
  */
@@ -101,8 +96,17 @@ void chart_handler_add_point(ChartHandler * handler, ChartHandlerChannel ch, flo
 /**
  * @brief Chart handler routine that updates all the values
  *
- * @param handler A pointer to the char handler structure
+ * @param handler A pointer to the chart handler structure
  */
 void chart_handler_routine(ChartHandler * handler);
+
+/**
+ * @brief Invalidate all the chart data of a single channel resetting all its values to 0
+ *
+ * @details Only the data is reset, the scales and offset remain the same and are not changed
+ *
+ * @param handler A pointer to the chart handler structure
+ */
+void chart_handler_invalidate(ChartHandler * handler, ChartHandlerChannel ch);
 
 #endif  // CHART_HANDLER_H

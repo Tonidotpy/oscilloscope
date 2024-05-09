@@ -9,9 +9,21 @@
 #ifndef WAVES_H
 #define WAVES_H
 
+#include <stdint.h>
 
+#define WAVES_SIZE (120U)
 
-static uint32_t waves_table[6][120] = {
+typedef enum {
+    WAVES_TYPE_SINE,
+    WAVES_TYPE_SQUARE,
+    WAVES_TYPE_TRIANGLE,
+    WAVES_TYPE_SAW,
+    WAVES_TYPE_GAUSSIAN,
+    WAVES_TYPE_STAIR,
+    WAVES_TYPE_COUNT
+} WavesType;
+
+static uint32_t waves_table[WAVES_TYPE_COUNT][WAVES_SIZE] = {
 {//sin
 	0x7fff, 0x86b2, 0x8d60, 0x9405, 0x9a9c, 0xa120, 0xa78d, 0xadde, 0xb40f, 0xba1b, 0xbfff, 
 	0xc5b5, 0xcb3b, 0xd08c, 0xd5a5, 0xda81, 0xdf1e, 0xe378, 0xe78c, 0xeb58, 0xeed8, 0xf20b, 
