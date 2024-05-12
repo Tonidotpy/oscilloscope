@@ -15,6 +15,11 @@
 
 #include "config.h"
 
+/** @brief Number of values required to fill a single division of the chart */
+#define CHART_HANDLER_VALUES_PER_DIVISION (10U)
+
+/** @brief Maximum number of raw samples that the chart handler can handler */
+#define CHART_HANDLER_VALUES_COUNT (CHART_X_DIVISION_COUNT * CHART_HANDLER_VALUES_PER_DIVISION)
 
 /** @brief Available channels of the oscilloscope */
 typedef enum {
@@ -32,10 +37,11 @@ typedef struct {
     float x_offset[CHART_HANDLER_CHANNEL_COUNT]; // in us
     float offset[CHART_HANDLER_CHANNEL_COUNT]; // in mV
  
+    bool enabled[CHART_HANDLER_CHANNEL_COUNT];
     bool ready[CHART_HANDLER_CHANNEL_COUNT];
     size_t index[CHART_HANDLER_CHANNEL_COUNT];
-    float raw[CHART_HANDLER_CHANNEL_COUNT][CHART_SAMPLE_COUNT] __attribute__((aligned(16)));
-    float data[CHART_HANDLER_CHANNEL_COUNT][CHART_SAMPLE_COUNT];
+    uint16_t raw[CHART_HANDLER_CHANNEL_COUNT][CHART_HANDLER_VALUES_COUNT];
+    float data[CHART_HANDLER_CHANNEL_COUNT][CHART_HANDLER_VALUES_COUNT];
 } ChartHandler;
 
 /**
@@ -45,6 +51,23 @@ typedef struct {
  * @param api A pointer to an LVGL api handler structure
  */
 void chart_handler_init(ChartHandler * handler, void * api);
+
+/**
+ * @brief Enable or disable a single channel
+ *
+ * @param handler A pointer to the chart handler structure
+ * @param ch The channel to enable/disable
+ * @param enabled True to enable, false to disable
+ */
+void chart_handler_set_enable(ChartHandler * handler, ChartHandlerChannel ch, bool enabled);
+
+/**
+ * @brief Toggle the enabled state of a single channel
+ *
+ * @param handler A pointer to the chart handler structure
+ * @param ch The channel to enable/disable
+ */
+void chart_handler_toggle_enable(ChartHandler * handler, ChartHandlerChannel ch);
 
 /**
  * @brief Get the current offset of a single channel
@@ -105,13 +128,12 @@ float chart_handler_get_x_scale(ChartHandler * handler, ChartHandlerChannel ch);
 void chart_handler_set_x_scale(ChartHandler * handler, ChartHandlerChannel ch, float value);
 
 /**
- * @brief Add a point in the chart on the selected channel
+ * @brief Update the chart handler values
  *
  * @param handler A pointer to the chart handler structure
- * @param ch The channel to add the point to
- * @param value The converted value in mV
+ * @param t The amount of time taken by the ADC to make the sampling and conversion in us
  */
-void chart_handler_add_point(ChartHandler * handler, ChartHandlerChannel ch, float value);
+void chart_handler_update(ChartHandler * handler, uint32_t t);
 
 /**
  * @brief Chart handler routine that updates all the values

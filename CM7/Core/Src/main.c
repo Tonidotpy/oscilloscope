@@ -48,10 +48,6 @@
 #define HSEM_ID_0 (0U) /* HW semaphore 0*/
 #endif
 
-#define ADC_RESOLUTION (16U)
-#define ADC_VREF (3300.0f) // in mV
-#define ADC_VALUE_TO_VOLTAGE(VAL) (((VAL) / (float)((1 << ADC_RESOLUTION) - 1.0f)) * ADC_VREF)
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -61,6 +57,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc2;
+DMA_HandleTypeDef hdma_adc2;
 
 CRC_HandleTypeDef hcrc;
 
@@ -87,14 +84,15 @@ static LvHandler lv_handler;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_DSIHOST_DSI_Init(void);
-static void MX_LTDC_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_I2C4_Init(void);
 static void MX_DMA2D_Init(void);
 static void MX_CRC_Init(void);
 static void MX_TIM7_Init(void);
+static void MX_DSIHOST_DSI_Init(void);
 static void MX_ADC2_Init(void);
+static void MX_LTDC_Init(void);
 static void MX_FMC_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -102,6 +100,29 @@ static void MX_FMC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+/**
+ * @brief Start the timer used to count microseconds
+ */
+void start_channels_conversion(void) {
+    // Restart microseconds timer
+    __HAL_TIM_SET_COUNTER(&htim7, 0U);
+    HAL_TIM_Base_Start(&htim7);
+    // Start ADC conversion
+    HAL_ADC_Start_DMA(&hadc2, (uint32_t *)CHART_CH1_RAW_DATA_ADDRESS, CHART_SAMPLE_COUNT); 
+}
+
+/**
+ * @brief Stop the timer used to count microseconds
+ *
+ * @return uint32_t The timer counter value
+ */
+uint32_t stop_channels_conversion(void) {
+    // Stop microseconds timer and ADC conversion
+    HAL_TIM_Base_Stop(&htim7);
+    HAL_ADC_Stop_DMA(&hadc2);
+    return __HAL_TIM_GET_COUNTER(&htim7);
+}
 
 /* USER CODE END 0 */
 
@@ -162,19 +183,23 @@ Error_Handler();
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DSIHOST_DSI_Init();
-  MX_LTDC_Init();
+  MX_DMA_Init();
   MX_USART1_UART_Init();
   MX_I2C4_Init();
   MX_DMA2D_Init();
   MX_CRC_Init();
   MX_TIM7_Init();
+  MX_DSIHOST_DSI_Init();
   MX_ADC2_Init();
+  MX_LTDC_Init();
   MX_FMC_Init();
   /* USER CODE BEGIN 2 */
 
-  // Clear frame buffer memory
-  memset((uint32_t *)LCD_FRAME_BUFFER_0_ADDRESS, 0, LCD_FRAME_BUFFER_0_WIDTH);
+  // Clear SRAM used memory before use
+  memset((uint32_t *)LCD_FRAME_BUFFER_0_ADDRESS, 0U, LCD_FRAME_BUFFER_0_WIDTH);
+  memset((uint32_t *)LCD_FRAME_BUFFER_1_ADDRESS, 0U, LCD_FRAME_BUFFER_1_WIDTH);
+  memset((uint32_t *)CHART_CH1_RAW_DATA_ADDRESS, 0U, CHART_CH1_RAW_DATA_WIDTH);
+  memset((uint32_t *)CHART_CH2_RAW_DATA_ADDRESS, 0U, CHART_CH2_RAW_DATA_WIDTH);
 
   // Init LCD display controller
   if (lcd_init(&hdsi, LCD_INITIAL_BRIGHTNESS) != HAL_OK)
@@ -209,49 +234,23 @@ Error_Handler();
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-  // Start ADC conversion with timer and DMA
-  // BUG: DMA not working correctly
-  // HAL_ADCEx_Calibration_Start(&hadc3, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED);
-  // HAL_Delay(10);
-  // HAL_ADC_Start_DMA(&hadc3, (uint32_t *)lv_handler.chart_handler.raw[CHART_HANDLER_CHANNEL_1], CHART_HANDLER_SAMPLE_COUNT); 
-  
-  // static uint16_t a[10U];
-  // HAL_ADC_Start_DMA(&hadc2, (uint32_t *)&a, 2U); 
-  // HAL_ADC_Start_DMA(&hadc2, (uint32_t *)&lv_handler.chart_handler.raw[CHART_HANDLER_CHANNEL_1], 2U); 
+  // Calibrate ADC
+  HAL_ADCEx_Calibration_Start(&hadc2, ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED);
+  HAL_Delay(10);
 
-  // Start timer and ADC conversion
-  HAL_ADC_Start(&hadc2);
-  HAL_TIM_Base_Start_IT(&htim7);
+  // Start oscilloscope channel conversions
+  // BUG: DMA transfert error if using the internal RAM as memory destination
+  start_channels_conversion();
 
   uint32_t timestamp = 0;
-  // size_t cnt = 0;
   while (1)
   {
     if (HAL_GetTick() - timestamp >= 500) {
         HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
-        timestamp = HAL_GetTick(); 
-
-        // uint32_t status = HAL_ADC_GetError(&hadc3);
-        // char msg[128];
-        // sprintf(msg, "Valore: %d\r\n", status);
-        // HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
-    
-        // HAL_ADC_Start_DMA(&hadc3, (uint32_t *)lv_handler.chart_handler.raw[CHART_HANDLER_CHANNEL_1], 1); 
-        // if (++cnt == 10) {
-        //     cnt = 0;
-        //     lv_handler.chart_handler.ready[CHART_HANDLER_CHANNEL_1] = true;
-        // }
+        timestamp = HAL_GetTick();
     }
 
     lv_api_run(&lv_handler);
-
-    /*
-    HAL_ADC_Start(&hadc3);
-    HAL_ADC_PollForConversion(&hadc3, HAL_MAX_DELAY);
-    uint16_t raw = HAL_ADC_GetValue(&hadc3);
-
-    lv_api_draw_point(&lv_handler, (int32_t)(raw / 65535.0 * 80.0));
-    */
 
     /* USER CODE END WHILE */
 
@@ -340,17 +339,17 @@ static void MX_ADC2_Init(void)
   */
   hadc2.Instance = ADC2;
   hadc2.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
-  hadc2.Init.Resolution = ADC_RESOLUTION_16B;
+  hadc2.Init.Resolution = ADC_RESOLUTION_14B;
   hadc2.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc2.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   hadc2.Init.LowPowerAutoWait = DISABLE;
-  hadc2.Init.ContinuousConvMode = DISABLE;
+  hadc2.Init.ContinuousConvMode = ENABLE;
   hadc2.Init.NbrOfConversion = 1;
   hadc2.Init.DiscontinuousConvMode = DISABLE;
   hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc2.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DR;
-  hadc2.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;
+  hadc2.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DMA_CIRCULAR;
+  hadc2.Init.Overrun = ADC_OVR_DATA_PRESERVED;
   hadc2.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
   hadc2.Init.OversamplingMode = DISABLE;
   if (HAL_ADC_Init(&hadc2) != HAL_OK)
@@ -362,7 +361,7 @@ static void MX_ADC2_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_16CYCLES_5;
+  sConfig.SamplingTime = ADC_SAMPLETIME_8CYCLES_5;
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
@@ -687,9 +686,9 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 20000;
+  htim7.Init.Prescaler = 199;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim7.Init.Period = 100;
+  htim7.Init.Period = 65535;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
   {
@@ -752,6 +751,22 @@ static void MX_USART1_UART_Init(void)
   /* USER CODE BEGIN USART1_Init 2 */
 
   /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
 
 }
 
@@ -991,14 +1006,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
     static char msg[128] = { 0 };
 
     if (pin == USER_BUTTON_Pin) {
-        if (lcd_get_status() == LCD_ON) {
-            lcd_off();
-            ts_disable();
-        }
-        else {
-            lcd_on();
-            ts_enable();
-        }
+        chart_handler_toggle_enable(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
     }
     else if (pin == TOUCH_INTERRUPT_Pin) {
         // Get touch screen info
@@ -1061,26 +1069,25 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
     }
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef * htim) {
-    // Poll for conversion
-    // if ((hadc2.Instance->ISR & ADC_FLAG_EOC) == 0) {
-    if (HAL_ADC_PollForConversion(&hadc2, 1) == HAL_OK) {
-        uint16_t value = HAL_ADC_GetValue(&hadc2);
-        chart_handler_add_point(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, ADC_VALUE_TO_VOLTAGE(value));
-
-        HAL_ADC_Start(&hadc2);
-    }
-}
-
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef * hadc) {
-    HAL_UART_Transmit(&huart1, (uint8_t *)"Error\r\n", 7U, 30);
+    UNUSED(hadc);
+    HAL_UART_Transmit(&huart1, (uint8_t *)"ADC DMA Error\r\n", 15U, 30);
 }
 void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef * hadc) {
-    HAL_UART_Transmit(&huart1, (uint8_t *)"Half...\r\n", 9U, 30);
+    UNUSED(hadc);
 }
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef * hadc) {
-    HAL_UART_Transmit(&huart1, (uint8_t *)"Complete\r\n", 10U, 30);
-    lv_handler.chart_handler.ready[CHART_HANDLER_CHANNEL_1] = true;
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef * hadc) { 
+    UNUSED(hadc);
+
+    // Stop microseconds timer and get counter value
+    uint32_t dt = stop_channels_conversion();
+    if (dt == 0U)
+        dt = 1U;
+
+    chart_handler_update(&lv_handler.chart_handler, dt);
+
+    // Restart timer
+    start_channels_conversion();
 }
 
 /* USER CODE END 4 */
