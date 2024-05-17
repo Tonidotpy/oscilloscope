@@ -98,26 +98,22 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
         const float time_per_value = handler->x_scale[ch] / CHART_HANDLER_VALUES_PER_DIVISION;
         const float inc = time_per_value / time_per_sample;
 
-        // Save the available samples to match the displayed time
-        static float off = 0.f;
-        for (float x = off; x < CHART_SAMPLE_COUNT; x += inc, off += inc) {
-            // BUG: Volatile neede because compiler optimization cause problems
-            volatile size_t j = (size_t)x;
-
-            // Copy value
-            handler->raw[ch][handler->index[ch]++] = raw[ch][j];
+        float delta = 0.0f;
+        
+        for(int i = 0; i < CHART_SAMPLE_COUNT; i++) {
+            if(delta >= time_per_value) {
+                delta = 0.0f;
+                handler->raw[ch][handler->index[ch]++] = raw[ch][i];
+            }
+            delta += time_per_sample;
 
             // Check if ready
             if (handler->index[ch] >= CHART_HANDLER_VALUES_COUNT) {
-                off = 0.f;
                 handler->index[ch] = 0U;
                 handler->ready[ch] = true;
                 break;
             }
         }
-
-        while (off >= CHART_SAMPLE_COUNT)
-            off -= CHART_SAMPLE_COUNT; 
     }
 }
 
