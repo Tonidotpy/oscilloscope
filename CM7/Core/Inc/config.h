@@ -93,7 +93,7 @@
 
 /** @brief Minimum and maximum values per division for the X value of the chart in us */
 #define CHART_MIN_X_SCALE (1000.0f) // in us
-#define CHART_MAX_X_SCALE (100000.0f) // in us
+#define CHART_MAX_X_SCALE (300000.0f) // in us
 
 /** @brief Minimum and maximum values per division for the Y value of the chart in mV */
 #define CHART_MIN_Y_SCALE (10.0f) // in mV

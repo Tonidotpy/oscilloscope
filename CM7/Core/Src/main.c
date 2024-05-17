@@ -1017,12 +1017,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
     else if (pin == JOY_SELECT_Pin) {
         HAL_UART_Transmit(&huart1, (uint8_t *)"Joypad select\r\n", 15, 10);
     }
-    else if (pin == JOY_DOWN_Pin) {
+    else if (pin == JOY_LEFT_Pin) {
         float scale = chart_handler_get_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
         scale *= 0.5f;
         chart_handler_set_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, scale);
 
-        sprintf(msg, "X scale: %.2f\r\n", scale);
+        sprintf(msg, "X scale: %.2f\r\n", chart_handler_get_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1));
         HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
         
         /*
@@ -1034,28 +1034,28 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
         HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
         */
     }
-    else if (pin == JOY_RIGHT_Pin) {
+    else if (pin == JOY_UP_Pin) {
         float scale = chart_handler_get_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
         scale *= 2.0f;
         chart_handler_set_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, scale);
 
-        sprintf(msg, "Scale: %.2f\r\n", scale);
+        sprintf(msg, "Scale: %.2f\r\n", chart_handler_get_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1));
         HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
     }
-    else if (pin == JOY_LEFT_Pin) {
+    else if (pin == JOY_DOWN_Pin) {
         float scale = chart_handler_get_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
         scale *= 0.5f;
         chart_handler_set_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, scale);
 
-        sprintf(msg, "Scale: %.2f\r\n", scale);
+        sprintf(msg, "Scale: %.2f\r\n", chart_handler_get_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1));
         HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
     }
-    else if (pin == JOY_UP_Pin) {
+    else if (pin == JOY_RIGHT_Pin) {
         float scale = chart_handler_get_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
         scale *= 2.0f;
         chart_handler_set_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, scale);
 
-        sprintf(msg, "X scale: %.2f\r\n", scale);
+        sprintf(msg, "X scale: %.2f\r\n", chart_handler_get_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1));
         HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
 
         /*
@@ -1120,8 +1120,8 @@ void Error_Handler(void)
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
+
