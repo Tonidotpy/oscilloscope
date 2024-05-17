@@ -9,6 +9,7 @@
 #include "chart_handler.h"
 
 #include <string.h>
+#include <math.h>
 
 #include "config.h"
 #include "lvgl_api.h"
@@ -78,11 +79,12 @@ void chart_handler_set_x_scale(ChartHandler * handler, ChartHandlerChannel ch, f
     chart_handler_invalidate(handler, ch);
 }
 
+// TODO: Add horizontal offset
 void chart_handler_update(ChartHandler * handler, uint32_t t) {
     if (handler == NULL)
         return;
 
-    const uint16_t * raw[] = {
+    volatile const uint16_t * raw[] = {
         (uint16_t *)CHART_CH1_RAW_DATA_ADDRESS,
         (uint16_t *)CHART_CH2_RAW_DATA_ADDRESS
     };
@@ -90,34 +92,43 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
     // Get time for each sample in us
     const float time_per_sample = t / (float)CHART_SAMPLE_COUNT;
 
-    for (size_t ch = 0; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
+    for (size_t ch = 0U; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
         if (!handler->enabled[ch] || handler->ready[ch])
             continue;
 
         // Time between each value in us
         const float time_per_value = handler->x_scale[ch] / CHART_HANDLER_VALUES_PER_DIVISION;
-        const float inc = time_per_value / time_per_sample;
+        // Number of values for each sample
+        const float samples_per_value = time_per_value / time_per_sample;
 
-        float delta = 0.0f;
-        
-        for(int i = 0; i < CHART_SAMPLE_COUNT; i++) {
-            if(delta >= time_per_value) {
-                delta = 0.0f;
-                handler->raw[ch][handler->index[ch]++] = raw[ch][i];
+        volatile static float off = 0.f; 
+        for(size_t i = 0U; i < CHART_HANDLER_VALUES_COUNT; ++i) {
+            // Calculate samples index
+            float samples = samples_per_value * i + off;
+            size_t j = samples < 0.f ? 0U : (size_t)floorf(samples);
+
+            // Break if more samples are needed
+            if (j >= CHART_SAMPLE_COUNT) {
+                // Calculate offset
+                off = (samples + 1.f) - (float)CHART_SAMPLE_COUNT;
+                break;
             }
-            delta += time_per_sample;
 
-            // Check if ready
+            // Copy value
+            handler->raw[ch][handler->index[ch]++] = raw[ch][j];
+
+            // Check if the signal is ready to be displayed
             if (handler->index[ch] >= CHART_HANDLER_VALUES_COUNT) {
+                off = 0.f;
                 handler->index[ch] = 0U;
                 handler->ready[ch] = true;
                 break;
             }
         }
+
     }
 }
 
-// TODO: Match chart X axis with time
 void chart_handler_routine(ChartHandler * handler) {
     if (handler == NULL)
         return;

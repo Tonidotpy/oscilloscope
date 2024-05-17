@@ -89,10 +89,10 @@
 #define CHART_Y_DIVISION_COUNT (CHART_HORIZONTAL_LINE_COUNT - 1U)
 
 /** @brief Total number of points of the chart */
-#define CHART_POINT_COUNT ((CHART_VERTICAL_LINE_COUNT) * 100U)
+#define CHART_POINT_COUNT ((CHART_X_DIVISION_COUNT) * 100U)
 
 /** @brief Minimum and maximum values per division for the X value of the chart in us */
-#define CHART_MIN_X_SCALE (1000.0f) // in us
+#define CHART_MIN_X_SCALE (10.0f) // in us
 #define CHART_MAX_X_SCALE (300000.0f) // in us
 
 /** @brief Minimum and maximum values per division for the Y value of the chart in mV */

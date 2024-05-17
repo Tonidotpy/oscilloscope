@@ -190,6 +190,7 @@ void lv_api_run(LvHandler * handler) {
     lv_timer_handler_run_in_period(5);
 }
 
+// TODO: Check
 void lv_api_update_points(
     LvHandler * handler,
     ChartHandlerChannel ch,
