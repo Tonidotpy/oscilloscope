@@ -13,6 +13,9 @@
 
 /*** General ***/
 
+/** @brief Time to wait until a new button press is handled in ms (used for debounce) */
+#define BUTTON_DEBOUNCE_TIME (100U)
+
 /** @brief The LED GPIO ports */
 #define LED_GREEN_GPIO_Port LED1_GPIO_Port
 #define LED_ORANGE_GPIO_Port LED2_GPIO_Port

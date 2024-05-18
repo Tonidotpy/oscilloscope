@@ -1012,7 +1012,14 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
     static char msg[128] = { 0 };
 
     if (pin == USER_BUTTON_Pin) {
-        chart_handler_toggle_enable(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
+        // Debounce
+        static uint32_t last_press_time = 0U;
+        uint32_t t = HAL_GetTick();
+        if (t - last_press_time >= BUTTON_DEBOUNCE_TIME) {
+            last_press_time = t;
+            // Stop the acquisition
+            chart_handler_toggle_enable(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
+        }
     }
     else if (pin == TOUCH_INTERRUPT_Pin) {
         // Get touch screen info
