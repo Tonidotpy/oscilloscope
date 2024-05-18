@@ -83,28 +83,6 @@ void chart_handler_toggle_enable(ChartHandler * handler, ChartHandlerChannel ch)
         chart_handler_invalidate(handler, ch);
 }
 
-bool chart_handler_is_running(ChartHandler * handler, ChartHandlerChannel ch) {
-    if (handler == NULL)
-        return false;
-    return handler->running[ch];
-}
-
-void chart_handler_set_running(ChartHandler * handler, ChartHandlerChannel ch, bool running) {
-    if (handler == NULL)
-        return;
-    handler->running[ch] = running;
-    if (running)
-        chart_handler_invalidate(handler, ch);
-}
-
-void chart_handler_toggle_enable(ChartHandler * handler, ChartHandlerChannel ch) {
-    if (handler == NULL)
-        return;
-    handler->enabled[ch] = !handler->enabled[ch];
-    if (handler->enabled[ch])
-        chart_handler_invalidate(handler, ch);
-}
-
 float chart_handler_get_offset(ChartHandler * handler, ChartHandlerChannel ch) {
     if (handler == NULL)
         return 0;
