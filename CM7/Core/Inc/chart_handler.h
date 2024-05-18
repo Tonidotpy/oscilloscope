@@ -53,6 +53,16 @@ typedef struct {
 void chart_handler_init(ChartHandler * handler, void * api);
 
 /**
+ * @brief Check if the chart handler channel is enabled
+ *
+ * @param handler A pointer to the chart handler structure
+ * @param ch The channel to check
+ *
+ * @return bool True if the channel is enabled false otherwise
+ */
+bool chart_handler_is_enabled(ChartHandler * handler, ChartHandlerChannel ch);
+
+/**
  * @brief Enable or disable a single channel
  *
  * @param handler A pointer to the chart handler structure

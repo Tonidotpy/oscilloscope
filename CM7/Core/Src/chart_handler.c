@@ -28,16 +28,26 @@ void chart_handler_init(ChartHandler * handler, void * api) {
     }
 }
 
+bool chart_handler_is_enabled(ChartHandler * handler, ChartHandlerChannel ch) {
+    if (handler == NULL)
+        return false;
+    return handler->enabled[ch];
+}
+
 void chart_handler_set_enable(ChartHandler * handler, ChartHandlerChannel ch, bool enabled) {
     if (handler == NULL)
         return;
     handler->enabled[ch] = enabled;
+    if (enabled)
+        chart_handler_invalidate(handler, ch);
 }
 
 void chart_handler_toggle_enable(ChartHandler * handler, ChartHandlerChannel ch) {
     if (handler == NULL)
         return;
     handler->enabled[ch] = !handler->enabled[ch];
+    if (handler->enabled[ch])
+        chart_handler_invalidate(handler, ch);
 }
 
 float chart_handler_get_offset(ChartHandler * handler, ChartHandlerChannel ch) {
@@ -160,6 +170,5 @@ void chart_handler_invalidate(ChartHandler * handler, ChartHandlerChannel ch) {
 
     // Reset data
     handler->ready[ch] = false;
-    memset(handler->raw[ch], 0U, CHART_HANDLER_VALUES_COUNT * sizeof(handler->raw[ch][0U]));
-    memset(handler->data[ch], 0U, CHART_HANDLER_VALUES_COUNT * sizeof(handler->data[ch][0U]));
+    handler->index[ch] = 0U;
 }
