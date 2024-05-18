@@ -1009,6 +1009,12 @@ static void MX_GPIO_Init(void)
 
 // TODO: Change scales while paused
 void HAL_GPIO_EXTI_Callback(uint16_t pin) {
+    // Lock to avoid multiple interrupts during operations
+    static bool lock = false;
+    if (lock)
+        return;
+    lock = true;
+    
     static char msg[128] = { 0 };
 
     if (pin == USER_BUTTON_Pin) {
@@ -1031,7 +1037,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
             lv_api_update_ts_status(&info);
     }
     else if (pin == JOY_SELECT_Pin) {
-        HAL_UART_Transmit(&huart1, (uint8_t *)"Joypad select\r\n", 15, 10);
+        float off = chart_handler_get_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
+        off += 50.f;
+        chart_handler_set_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, off);
+
+        sprintf(msg, "Offset: %.2f\r\n", chart_handler_get_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1));
+        HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
     }
     else if (pin == JOY_LEFT_Pin) {
         float scale = chart_handler_get_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
@@ -1083,6 +1094,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
         HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
         */
     }
+
+    lock = false;
 }
 
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef * hadc) {
