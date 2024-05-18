@@ -1024,9 +1024,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
         if (t - last_press_time >= BUTTON_DEBOUNCE_TIME) {
             last_press_time = t;
             // Stop the acquisition
-            chart_handler_toggle_enable(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
+            chart_handler_toggle_running(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
 
-            sprintf(msg, "Running: %s\r\n", chart_handler_is_enabled(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1) ? "true" : "false");
+            sprintf(msg, "Running: %s\r\n", chart_handler_is_running(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1) ? "true" : "false");
             HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
         }
     }

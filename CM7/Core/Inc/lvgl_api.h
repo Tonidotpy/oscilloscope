@@ -67,6 +67,14 @@ void lv_api_update_ts_status(TsInfo * info);
 void lv_api_run(LvHandler * handler);
 
 /**
+ * @brief Clear the channel data to avoid plotting unwanted values
+ *
+ * @param handler A pointer to the LVGL handler structure
+ * @param ch The channel to modify
+ */
+void lv_api_clear_channel_data(LvHandler * handler, ChartHandlerChannel ch);
+
+/**
  * @brief Update all the points of the chart
  *
  * @param handler A pointer to the LVGL handler structure

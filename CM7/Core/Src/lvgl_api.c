@@ -190,6 +190,12 @@ void lv_api_run(LvHandler * handler) {
     lv_timer_handler_run_in_period(5);
 }
 
+void lv_api_clear_channel_data(LvHandler * handler, ChartHandlerChannel ch) {
+    if (handler == NULL)
+        return;
+    memset(handler->channels[ch], LV_CHART_POINT_NONE, CHART_POINT_COUNT * sizeof(int32_t));
+}
+
 // TODO: Check
 void lv_api_update_points(
     LvHandler * handler,

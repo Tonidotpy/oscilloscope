@@ -17,35 +17,27 @@
 // TODO: Update offsets
 void _chart_handler_reload(
     ChartHandler * handler,
+    ChartHandlerChannel ch,
     float off,
     float scale,
     float x_off,
     float x_scale)
 {
-    if (handler == NULL)
-        return;
+    // Calculate the ratio between the current scale and the previous
+    const float scale_ratio = handler->scale[ch] / scale;
+    const float x_scale_ratio = handler->x_scale[ch] / x_scale;
 
-    for (size_t ch = 0U; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
-        // Ignore if running
-        if (handler->enabled[ch])
-            continue;
+    // Calculate the delta between the current offset and the previous
+    const float doff = off - handler->offset[ch];
+    const float dx_off = off - handler->offset[ch];
 
-        // Calculate the ratio between the current scale and the previous
-        const float scale_ratio = handler->scale[ch] / scale;
-        const float x_scale_ratio = handler->x_scale[ch] / x_scale;
-
-        // Calculate the delta between the current offset and the previous
-        const float doff = off - handler->offset[ch];
-        const float dx_off = off - handler->offset[ch];
-
-        for (size_t i = 0; i < CHART_HANDLER_VALUES_COUNT; ++i) {
-            // Rescale
-            handler->data[ch][i] *= scale_ratio;
-            handler->data[ch][i] += (doff / scale); 
-        }
-
-        lv_api_update_points(handler->api, ch, handler->data[ch], CHART_HANDLER_VALUES_COUNT);
+    for (size_t i = 0; i < CHART_HANDLER_VALUES_COUNT; ++i) {
+        // Rescale
+        handler->data[ch][i] *= scale_ratio;
+        handler->data[ch][i] += (doff / scale); 
     }
+
+    lv_api_update_points(handler->api, ch, handler->data[ch], CHART_HANDLER_VALUES_COUNT);
 }
 
 void chart_handler_init(ChartHandler * handler, void * api) {
@@ -55,9 +47,11 @@ void chart_handler_init(ChartHandler * handler, void * api) {
 
     handler->api = api;
     handler->enabled[CHART_HANDLER_CHANNEL_1] = true;
-    for (size_t i = 0; i < CHART_HANDLER_CHANNEL_COUNT; ++i) {
-        handler->x_scale[i] = 5000.0f; // CHART_MIN_X_SCALE;
-        handler->scale[i] = 1000.0f;
+    for (size_t ch = 0; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
+        handler->running[ch] = true;
+
+        handler->x_scale[ch] = 5000.0f; // CHART_MIN_X_SCALE;
+        handler->scale[ch] = 1000.0f;
     }
 }
 
@@ -73,14 +67,30 @@ void chart_handler_set_enable(ChartHandler * handler, ChartHandlerChannel ch, bo
     handler->enabled[ch] = enabled;
     if (enabled)
         chart_handler_invalidate(handler, ch);
+    else
+        lv_api_clear_channel_data(handler->api, ch);
 }
 
 void chart_handler_toggle_enable(ChartHandler * handler, ChartHandlerChannel ch) {
+    chart_handler_set_enable(handler, ch, !handler->enabled[ch]);
+}
+
+bool chart_handler_is_running(ChartHandler * handler, ChartHandlerChannel ch) {
+    if (handler == NULL)
+        return false;
+    return handler->running[ch];
+}
+
+void chart_handler_set_running(ChartHandler * handler, ChartHandlerChannel ch, bool running) {
     if (handler == NULL)
         return;
-    handler->enabled[ch] = !handler->enabled[ch];
-    if (handler->enabled[ch])
+    handler->running[ch] = running;
+    if (running)
         chart_handler_invalidate(handler, ch);
+}
+
+void chart_handler_toggle_running(ChartHandler * handler, ChartHandlerChannel ch) {
+    chart_handler_set_running(handler, ch, !handler->running[ch]);
 }
 
 float chart_handler_get_offset(ChartHandler * handler, ChartHandlerChannel ch) {
@@ -90,13 +100,14 @@ float chart_handler_get_offset(ChartHandler * handler, ChartHandlerChannel ch) {
 }
 
 void chart_handler_set_offset(ChartHandler * handler, ChartHandlerChannel ch, float value) {
-    if (handler == NULL)
-        return;
+    if (handler == NULL) return;
+    if (!handler->enabled[ch]) return;
 
-    // Reload the chart
-    if (!handler->enabled[ch]) {
+    // Reload the chart if its not running
+    if (!handler->running[ch]) {
         _chart_handler_reload(
             handler,
+            ch,
             value,
             handler->scale[ch],
             handler->x_offset[ch],
@@ -104,6 +115,7 @@ void chart_handler_set_offset(ChartHandler * handler, ChartHandlerChannel ch, fl
         );
     }
 
+    // Update offset and invalidate old data
     handler->offset[ch] = value;
     chart_handler_invalidate(handler, ch);
 }
@@ -115,13 +127,15 @@ float chart_handler_get_scale(ChartHandler * handler, ChartHandlerChannel ch) {
 }
 
 void chart_handler_set_scale(ChartHandler * handler, ChartHandlerChannel ch, float value) {
-    if (handler == NULL || value > CHART_MAX_Y_SCALE || value < CHART_MIN_Y_SCALE)
-        return;
+    if (handler == NULL) return;
+    if (!handler->enabled[ch]) return;
+    if (value > CHART_MAX_Y_SCALE || value < CHART_MIN_Y_SCALE) return;
 
-    // Reload the chart
-    if (!handler->enabled[ch]) {
+    // Reload the chart if its not running
+    if (!handler->running[ch]) {
         _chart_handler_reload(
             handler,
+            ch,
             handler->offset[ch],
             value,
             handler->x_offset[ch],
@@ -129,19 +143,22 @@ void chart_handler_set_scale(ChartHandler * handler, ChartHandlerChannel ch, flo
         );
     }
 
+    // Update scale and invalidate old data
     handler->scale[ch] = value;
     chart_handler_invalidate(handler, ch);
 }
 
 float chart_handler_get_x_scale(ChartHandler * handler, ChartHandlerChannel ch) {
     if (handler == NULL)
-        return 0;
+        return 0.f;
     return handler->x_scale[ch];
 }
 
 void chart_handler_set_x_scale(ChartHandler * handler, ChartHandlerChannel ch, float value) {
-    if (handler == NULL || value > CHART_MAX_X_SCALE || value < CHART_MIN_X_SCALE)
-        return;
+    if (handler == NULL) return;
+    if (value > CHART_MAX_X_SCALE || value < CHART_MIN_X_SCALE) return;
+
+    // Update scale and invalidate old data
     handler->x_scale[ch] = value;
     chart_handler_invalidate(handler, ch);
 }
@@ -160,7 +177,7 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
     const float time_per_sample = t / (float)CHART_SAMPLE_COUNT;
 
     for (size_t ch = 0U; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
-        if (!handler->enabled[ch] || handler->ready[ch])
+        if (!handler->enabled[ch] || !handler->running[ch] || handler->ready[ch])
             continue;
 
         // Time between each value in us
@@ -201,7 +218,7 @@ void chart_handler_routine(ChartHandler * handler) {
         return;
     
     for (size_t ch = 0 ; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
-        if (!handler->enabled[ch] || !handler->ready[ch])
+        if (!handler->enabled[ch] || !handler->running[ch] || !handler->ready[ch])
             continue;
 
         for (size_t i = 0; i < CHART_HANDLER_VALUES_COUNT; ++i) {

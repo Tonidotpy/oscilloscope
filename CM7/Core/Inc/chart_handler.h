@@ -38,6 +38,7 @@ typedef struct {
     float offset[CHART_HANDLER_CHANNEL_COUNT]; // in mV
  
     bool enabled[CHART_HANDLER_CHANNEL_COUNT];
+    bool running[CHART_HANDLER_CHANNEL_COUNT];
     bool ready[CHART_HANDLER_CHANNEL_COUNT];
     size_t index[CHART_HANDLER_CHANNEL_COUNT];
     uint16_t raw[CHART_HANDLER_CHANNEL_COUNT][CHART_HANDLER_VALUES_COUNT];
@@ -78,6 +79,33 @@ void chart_handler_set_enable(ChartHandler * handler, ChartHandlerChannel ch, bo
  * @param ch The channel to enable/disable
  */
 void chart_handler_toggle_enable(ChartHandler * handler, ChartHandlerChannel ch);
+
+/**
+ * @brief Check if the chart handler channel plot is updating
+ *
+ * @param handler A pointer to the chart handler structure
+ * @param ch The channel to check
+ *
+ * @return bool True if the channel plot is updating false otherwise
+ */
+bool chart_handler_is_running(ChartHandler * handler, ChartHandlerChannel ch);
+
+/**
+ * @brief Start or stop a single channel from updating
+ *
+ * @param handler A pointer to the chart handler structure
+ * @param ch The channel to enable/disable
+ * @param enabled True to start the update, false to stop
+ */
+void chart_handler_set_running(ChartHandler * handler, ChartHandlerChannel ch, bool running);
+
+/**
+ * @brief Toggle the running state of a single channel
+ *
+ * @param handler A pointer to the chart handler structure
+ * @param ch The channel to update
+ */
+void chart_handler_toggle_running(ChartHandler * handler, ChartHandlerChannel ch);
 
 /**
  * @brief Get the current offset of a single channel
