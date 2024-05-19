@@ -14,7 +14,7 @@
 /*** General ***/
 
 /** @brief Time to wait until a new button press is handled in ms (used for debounce) */
-#define BUTTON_DEBOUNCE_TIME (100U)
+#define BUTTON_DEBOUNCE_TIME (130U)
 
 /** @brief The LED GPIO ports */
 #define LED_GREEN_GPIO_Port LED1_GPIO_Port
@@ -41,7 +41,6 @@
  * @return float The voltage in mV
  */
 #define ADC_VALUE_TO_VOLTAGE(VAL) (((VAL) / (float)((1 << ADC_RESOLUTION) - 1.0f)) * ADC_VREF)
-
 
 /*** LCD ***/
 

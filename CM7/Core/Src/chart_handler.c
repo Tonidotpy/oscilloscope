@@ -14,7 +14,7 @@
 #include "config.h"
 #include "lvgl_api.h"
 
-// TODO: Update offsets
+// TODO: Update X scale and offset (data is lost if replaced)
 void _chart_handler_reload(
     ChartHandler * handler,
     ChartHandlerChannel ch,
@@ -32,9 +32,16 @@ void _chart_handler_reload(
     const float dx_off = off - handler->offset[ch];
 
     for (size_t i = 0; i < CHART_HANDLER_VALUES_COUNT; ++i) {
-        // Rescale
+        // Update Y scale and offset
         handler->data[ch][i] *= scale_ratio;
         handler->data[ch][i] += (doff / scale); 
+
+        // Update X scale and offset
+        volatile int j = (int)(i / x_scale_ratio);
+        if (j < 0 || j >= CHART_HANDLER_VALUES_COUNT)
+            handler->data[ch][i] = NAN;
+        else
+            handler->data[ch][i] = handler->data[ch][j];
     }
 
     lv_api_update_points(handler->api, ch, handler->data[ch], CHART_HANDLER_VALUES_COUNT);
@@ -78,15 +85,20 @@ void chart_handler_toggle_enable(ChartHandler * handler, ChartHandlerChannel ch)
 bool chart_handler_is_running(ChartHandler * handler, ChartHandlerChannel ch) {
     if (handler == NULL)
         return false;
-    return handler->running[ch];
+    // A stop request is counted as not running, otherwise check the running flag
+    return (!handler->stop_request[ch]) && handler->running[ch];
 }
 
 void chart_handler_set_running(ChartHandler * handler, ChartHandlerChannel ch, bool running) {
     if (handler == NULL)
         return;
-    handler->running[ch] = running;
-    if (running)
+    // Request stop if needed
+    handler->stop_request[ch] = !running;
+
+    if (running) {
+        handler->running[ch] = true;
         chart_handler_invalidate(handler, ch);
+    }
 }
 
 void chart_handler_toggle_running(ChartHandler * handler, ChartHandlerChannel ch) {
@@ -102,18 +114,6 @@ float chart_handler_get_offset(ChartHandler * handler, ChartHandlerChannel ch) {
 void chart_handler_set_offset(ChartHandler * handler, ChartHandlerChannel ch, float value) {
     if (handler == NULL) return;
     if (!handler->enabled[ch]) return;
-
-    // Reload the chart if its not running
-    if (!handler->running[ch]) {
-        _chart_handler_reload(
-            handler,
-            ch,
-            value,
-            handler->scale[ch],
-            handler->x_offset[ch],
-            handler->x_scale[ch]
-        );
-    }
 
     // Update offset and invalidate old data
     handler->offset[ch] = value;
@@ -131,18 +131,6 @@ void chart_handler_set_scale(ChartHandler * handler, ChartHandlerChannel ch, flo
     if (!handler->enabled[ch]) return;
     if (value > CHART_MAX_Y_SCALE || value < CHART_MIN_Y_SCALE) return;
 
-    // Reload the chart if its not running
-    if (!handler->running[ch]) {
-        _chart_handler_reload(
-            handler,
-            ch,
-            handler->offset[ch],
-            value,
-            handler->x_offset[ch],
-            handler->x_scale[ch]
-        );
-    }
-
     // Update scale and invalidate old data
     handler->scale[ch] = value;
     chart_handler_invalidate(handler, ch);
@@ -156,6 +144,7 @@ float chart_handler_get_x_scale(ChartHandler * handler, ChartHandlerChannel ch) 
 
 void chart_handler_set_x_scale(ChartHandler * handler, ChartHandlerChannel ch, float value) {
     if (handler == NULL) return;
+    if (!handler->enabled[ch]) return;
     if (value > CHART_MAX_X_SCALE || value < CHART_MIN_X_SCALE) return;
 
     // Update scale and invalidate old data
@@ -198,11 +187,18 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
                 break;
             }
 
-            // Copy value
-            handler->raw[ch][handler->index[ch]++] = raw[ch][j];
+            // Copy value only if not running
+            if (handler->running[ch])
+                handler->raw[ch][handler->index[ch]] = raw[ch][j];
+            ++handler->index[ch];
 
             // Check if the signal is ready to be displayed
             if (handler->index[ch] >= CHART_HANDLER_VALUES_COUNT) {
+                // Stop the update if requested
+                if (handler->stop_request[ch]) {
+                    handler->running[ch] = false;
+                    handler->stop_request[ch] = false;
+                }
                 off = 0.f;
                 handler->index[ch] = 0U;
                 handler->ready[ch] = true;
@@ -218,7 +214,8 @@ void chart_handler_routine(ChartHandler * handler) {
         return;
     
     for (size_t ch = 0 ; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
-        if (!handler->enabled[ch] || !handler->running[ch] || !handler->ready[ch])
+        // Do not update if the channel is not enabled or it's running but the data is not ready
+        if (!handler->enabled[ch] || (handler->running[ch] && !handler->ready[ch]))
             continue;
 
         for (size_t i = 0; i < CHART_HANDLER_VALUES_COUNT; ++i) {

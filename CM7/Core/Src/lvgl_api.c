@@ -219,9 +219,12 @@ void lv_api_update_points(
         // Interpolate
         size_t k = j >= (CHART_HANDLER_VALUES_COUNT - 1) ? (CHART_HANDLER_VALUES_COUNT - 1) : (j + step);
         float val = values[j]; // LERP(values[j], values[k], t);
-
-        // Convert to screen space
-        val *= div[ch];
+        if (val == NAN)
+            val = LV_CHART_POINT_NONE;
+        else {
+            // Convert to screen space
+            val *= div[ch];
+        }
 
         // Copy value
         handler->channels[ch][x] = val;

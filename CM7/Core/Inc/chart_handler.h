@@ -28,6 +28,27 @@ typedef enum {
     CHART_HANDLER_CHANNEL_COUNT
 } ChartHandlerChannel;
 
+/**
+ * @brief Definition to the chart handler structure
+ *
+ * @details The api is a void pointer to avoid problems of circular dependency
+ * @details When a channel is not enabled it is not displayed
+ * @details When a channel is not running the signal is not updated
+ * @details The stop request is required to avoid partial updates when stopping the signal from updating
+ *
+ * @param api A pointer to the LVGL api
+ * @param x_scale The temporal scale per division in us
+ * @param scale The voltage scale per division in mV
+ * @param x_offset The temporal offset in us
+ * @param offset The voltage offset in mV
+ * @param enabled Flag to enable/disable the channel
+ * @param stop_request Flag used to stop the channel update (see details above)
+ * @param running Flag to run/stop the channel from updating
+ * @param ready Flag set to true when all the data is ready to be displayed
+ * @param index The current index inside the raw data
+ * @param raw The raw ADC data
+ * @param data The converted with scale and offset applyed ready to be displayed
+ */
 typedef struct {
     void * api;
 
@@ -38,6 +59,7 @@ typedef struct {
     float offset[CHART_HANDLER_CHANNEL_COUNT]; // in mV
  
     bool enabled[CHART_HANDLER_CHANNEL_COUNT];
+    bool stop_request[CHART_HANDLER_CHANNEL_COUNT];
     bool running[CHART_HANDLER_CHANNEL_COUNT];
     bool ready[CHART_HANDLER_CHANNEL_COUNT];
     size_t index[CHART_HANDLER_CHANNEL_COUNT];
