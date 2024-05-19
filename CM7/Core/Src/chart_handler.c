@@ -14,39 +14,6 @@
 #include "config.h"
 #include "lvgl_api.h"
 
-// TODO: Update X scale and offset (data is lost if replaced)
-void _chart_handler_reload(
-    ChartHandler * handler,
-    ChartHandlerChannel ch,
-    float off,
-    float scale,
-    float x_off,
-    float x_scale)
-{
-    // Calculate the ratio between the current scale and the previous
-    const float scale_ratio = handler->scale[ch] / scale;
-    const float x_scale_ratio = handler->x_scale[ch] / x_scale;
-
-    // Calculate the delta between the current offset and the previous
-    const float doff = off - handler->offset[ch];
-    const float dx_off = off - handler->offset[ch];
-
-    for (size_t i = 0; i < CHART_HANDLER_VALUES_COUNT; ++i) {
-        // Update Y scale and offset
-        handler->data[ch][i] *= scale_ratio;
-        handler->data[ch][i] += (doff / scale); 
-
-        // Update X scale and offset
-        volatile int j = (int)(i / x_scale_ratio);
-        if (j < 0 || j >= CHART_HANDLER_VALUES_COUNT)
-            handler->data[ch][i] = NAN;
-        else
-            handler->data[ch][i] = handler->data[ch][j];
-    }
-
-    lv_api_update_points(handler->api, ch, handler->data[ch], CHART_HANDLER_VALUES_COUNT);
-}
-
 void chart_handler_init(ChartHandler * handler, void * api) {
     if (handler == NULL || api == NULL)
         return;
@@ -57,7 +24,7 @@ void chart_handler_init(ChartHandler * handler, void * api) {
     for (size_t ch = 0; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
         handler->running[ch] = true;
 
-        handler->x_scale[ch] = 5000.0f; // CHART_MIN_X_SCALE;
+        handler->x_scale_paused[ch] = handler->x_scale[ch] = 5000.0f; // CHART_MIN_X_SCALE;
         handler->scale[ch] = 1000.0f;
     }
 }
@@ -98,6 +65,11 @@ void chart_handler_set_running(ChartHandler * handler, ChartHandlerChannel ch, b
     if (running) {
         handler->running[ch] = true;
         chart_handler_invalidate(handler, ch);
+    }
+    else {
+        // Save current X offset and scale
+        handler->x_offset_paused[ch] = handler->x_offset[ch];
+        handler->x_scale_paused[ch] = handler->x_scale[ch];
     }
 }
 
@@ -152,6 +124,21 @@ void chart_handler_set_x_scale(ChartHandler * handler, ChartHandlerChannel ch, f
     chart_handler_invalidate(handler, ch);
 }
 
+float chart_handler_get_x_offset(ChartHandler * handler, ChartHandlerChannel ch) {
+    if (handler == NULL)
+        return 0.f;
+    return handler->x_offset[ch];
+}
+
+void chart_handler_set_x_offset(ChartHandler * handler, ChartHandlerChannel ch, float value) {
+    if (handler == NULL) return;
+    if (!handler->enabled[ch]) return;
+
+    // Update offset and invalidate old data
+    handler->x_offset[ch] = value;
+    chart_handler_invalidate(handler, ch);
+}
+
 // TODO: Add horizontal offset
 void chart_handler_update(ChartHandler * handler, uint32_t t) {
     if (handler == NULL)
@@ -187,9 +174,8 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
                 break;
             }
 
-            // Copy value only if not running
-            if (handler->running[ch])
-                handler->raw[ch][handler->index[ch]] = raw[ch][j];
+            // Copy value
+            handler->raw[ch][handler->index[ch]] = raw[ch][j];
             ++handler->index[ch];
 
             // Check if the signal is ready to be displayed
@@ -198,6 +184,10 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
                 if (handler->stop_request[ch]) {
                     handler->running[ch] = false;
                     handler->stop_request[ch] = false;
+
+                    // Save current X scale and offset
+                    handler->x_scale_paused[ch] = handler->x_scale[ch];
+                    handler->x_offset_paused[ch] = handler->x_offset[ch];
                 }
                 off = 0.f;
                 handler->index[ch] = 0U;
@@ -218,8 +208,21 @@ void chart_handler_routine(ChartHandler * handler) {
         if (!handler->enabled[ch] || (handler->running[ch] && !handler->ready[ch]))
             continue;
 
+        const float x_scale_ratio = handler->x_scale[ch] / handler->x_scale_paused[ch];
+
+        const float time_per_value = handler->x_scale[ch] / CHART_HANDLER_VALUES_PER_DIVISION;
+        const float x_off = handler->x_offset[ch] - handler->x_offset_paused[ch];
+        const float i_off = x_off / time_per_value;
+
         for (size_t i = 0; i < CHART_HANDLER_VALUES_COUNT; ++i) {
-            float val = ADC_VALUE_TO_VOLTAGE(handler->raw[ch][i]);
+            float val = NAN;
+            if (!handler->running[ch]) {
+                volatile int j = (int)((i - i_off) * x_scale_ratio);
+                if (j >= 0 && j < CHART_HANDLER_VALUES_COUNT)
+                    val = ADC_VALUE_TO_VOLTAGE(handler->raw[ch][j]);
+            }
+            else
+                val = ADC_VALUE_TO_VOLTAGE(handler->raw[ch][i]);
 
             // Translate
             val += handler->offset[ch];

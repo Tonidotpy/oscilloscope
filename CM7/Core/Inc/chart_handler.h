@@ -41,6 +41,8 @@ typedef enum {
  * @param scale The voltage scale per division in mV
  * @param x_offset The temporal offset in us
  * @param offset The voltage offset in mV
+ * @param x_offset_paused the temporal offset when the channel was paused in us
+ * @param x_scale_paused The temporal scale when the channel was in mV
  * @param enabled Flag to enable/disable the channel
  * @param stop_request Flag used to stop the channel update (see details above)
  * @param running Flag to run/stop the channel from updating
@@ -57,6 +59,9 @@ typedef struct {
 
     float x_offset[CHART_HANDLER_CHANNEL_COUNT]; // in us
     float offset[CHART_HANDLER_CHANNEL_COUNT]; // in mV
+
+    float x_offset_paused[CHART_HANDLER_CHANNEL_COUNT]; // in us
+    float x_scale_paused[CHART_HANDLER_CHANNEL_COUNT]; // in us
  
     bool enabled[CHART_HANDLER_CHANNEL_COUNT];
     bool stop_request[CHART_HANDLER_CHANNEL_COUNT];
@@ -186,6 +191,25 @@ float chart_handler_get_x_scale(ChartHandler * handler, ChartHandlerChannel ch);
  * @param The value of the scale in us
  */
 void chart_handler_set_x_scale(ChartHandler * handler, ChartHandlerChannel ch, float value);
+
+/**
+ * @brief Get the current time offset of a single channel
+ *
+ * @param handler A pointer to the chart handler structure
+ * @param ch The channel to get the offset from
+ *
+ * @return float The offset in us
+ */
+float chart_handler_get_x_offset(ChartHandler * handler, ChartHandlerChannel ch);
+
+/**
+ * @brief Set the time offset in us of a single channel
+ *
+ * @param handler A pointer to the chart handler structure
+ * @ch The channel to modify
+ * @param The value of the offset in us
+ */
+void chart_handler_set_x_offset(ChartHandler * handler, ChartHandlerChannel ch, float value);
 
 /**
  * @brief Update the chart handler values

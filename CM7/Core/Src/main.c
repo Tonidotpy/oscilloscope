@@ -1037,11 +1037,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
             lv_api_update_ts_status(&info);
     }
     else if (pin == JOY_SELECT_Pin) {
-        float off = chart_handler_get_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
+        float off = chart_handler_get_x_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
         off += 50.f;
-        chart_handler_set_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, off);
+        chart_handler_set_x_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, off);
 
-        sprintf(msg, "Offset: %.2f\r\n", chart_handler_get_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1));
+        sprintf(msg, "Offset: %.2f\r\n", chart_handler_get_x_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1));
         HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
     }
     else if (pin == JOY_LEFT_Pin) {
