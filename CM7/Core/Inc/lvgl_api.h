@@ -12,6 +12,7 @@
 #define LVGL_API_H
 
 #include <stddef.h>
+#include <stdio.h>
 
 #include "lvgl.h"
 #include "touch_screen.h"
@@ -22,6 +23,9 @@ typedef struct {
     lv_theme_t theme;
     lv_display_t * display;
     lv_indev_t * touch_screen;
+
+    lv_obj_t * div_time;
+    lv_obj_t * div_volt;
 
     lv_obj_t * chart;
     lv_chart_series_t * series[CHART_HANDLER_CHANNEL_COUNT];

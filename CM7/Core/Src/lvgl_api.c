@@ -90,6 +90,30 @@ static void _lv_update_ts_indev_callback(lv_indev_t * touch_screen, lv_indev_dat
     data->state = ts_info.detected ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
     ts_get_info(&ts_info);
 }
+void _lv_api_header_init(LvHandler * handler) {
+    lv_obj_t * screen = lv_display_get_screen_active(handler->display);
+    size_t w = lv_display_get_horizontal_resolution(handler->display);
+
+    lv_obj_t * header = lv_obj_create(screen);
+    lv_obj_set_size(header, w, HEADER_SIZE);
+    lv_obj_align(header, LV_ALIGN_TOP_MID, 0, 0);
+
+    char msg[128] = {0};
+
+    
+    sprintf(msg, "%.0f", CHART_DEFAULT_X_SCALE);
+
+    // Create labels for the header
+    handler->div_time = lv_label_create(header);
+    lv_label_set_text(handler->div_time, msg);
+    lv_obj_align(handler->div_time, LV_ALIGN_LEFT_MID, 10, 0);
+
+    sprintf(msg, "%.0f", CHART_DEFAULT_Y_SCALE);
+
+    handler->div_volt = lv_label_create(header);
+    lv_label_set_text(handler->div_volt, msg);
+    lv_obj_align(handler->div_volt, LV_ALIGN_RIGHT_MID, -10, 0);
+}
 /**
  * @brief Initialize the chart visualization for the oscilloscope
  */
@@ -101,8 +125,9 @@ void _lv_api_chart_init(LvHandler * handler) {
     // Setup chart
     handler->chart = lv_chart_create(screen);
     lv_chart_set_type(handler->chart, LV_CHART_TYPE_LINE);
-    lv_obj_set_size(handler->chart, w, h - 6);
-    lv_obj_center(handler->chart);
+    lv_obj_set_size(handler->chart, w, h - HEADER_SIZE);
+    lv_obj_align(handler->chart, LV_ALIGN_BOTTOM_MID, 0, 0);
+    // lv_obj_center(handler->chart);
 
     // Set point and line count
     lv_chart_set_div_line_count(handler->chart, CHART_HORIZONTAL_LINE_COUNT, CHART_VERTICAL_LINE_COUNT);
@@ -170,6 +195,7 @@ void lv_api_init(
     lv_display_set_theme(handler->display, &handler->theme); 
 
     // Initialize oscilloscope chart
+    _lv_api_header_init(handler);
     _lv_api_chart_init(handler);
     _lv_api_chart_handler_init(handler);
 }

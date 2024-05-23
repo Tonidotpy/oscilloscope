@@ -24,8 +24,8 @@ void chart_handler_init(ChartHandler * handler, void * api) {
     for (size_t ch = 0; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
         handler->running[ch] = true;
 
-        handler->x_scale_paused[ch] = handler->x_scale[ch] = 5000.0f; // CHART_MIN_X_SCALE;
-        handler->scale[ch] = 1000.0f;
+        handler->x_scale_paused[ch] = handler->x_scale[ch] = CHART_DEFAULT_X_SCALE; // CHART_MIN_X_SCALE;
+        handler->scale[ch] = CHART_DEFAULT_Y_SCALE;
     }
 }
 
