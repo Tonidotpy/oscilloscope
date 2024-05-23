@@ -96,7 +96,7 @@
 /** @brief Minimum and maximum values per division for the X value of the chart in us */
 #define CHART_MIN_X_SCALE (10.0f) // in us
 #define CHART_MAX_X_SCALE (300000.0f) // in us
-#define CHART_DEFAULT_X_SCALE (5000.0f) // in mV
+#define CHART_DEFAULT_X_SCALE (10000.0f) // in mV
 
 /** @brief Minimum and maximum values per division for the Y value of the chart in mV */
 #define CHART_MIN_Y_SCALE (10.0f) // in mV
@@ -108,5 +108,8 @@
 
 /** @brief Size of the header*/
 #define HEADER_SIZE (35U)
+
+/** @brief Maximum length of the string label '\0' included */
+#define HEADER_LABEL_STRING_SIZE (128U)
 
 #endif  // CONFIG_H

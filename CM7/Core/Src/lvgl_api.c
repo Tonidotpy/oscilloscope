@@ -10,9 +10,13 @@
 
 #include "lvgl_api.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "config.h"
+#include "lv_event.h"
+#include "lv_label.h"
+#include "lv_style_gen.h"
 #include "lvgl.h"
 #include "lvgl_colors.h"
 #include "stm32h7xx_hal_ltdc.h"
@@ -70,6 +74,12 @@ static void _lv_apply_theme(lv_theme_t * th, lv_obj_t * obj) {
         lv_style_set_line_opa(&chart_main_style, LV_OPA_20);
         lv_obj_add_style(obj, &chart_main_style, LV_PART_MAIN);
     }
+    else if (lv_obj_check_type(obj, &lv_label_class)) {
+        static lv_style_t label_main_style;
+        lv_style_init(&label_main_style);
+        lv_style_set_text_color(&label_main_style, LV_BLACK);
+        lv_obj_add_style(obj, &label_main_style, LV_PART_MAIN);
+    }
 }
 /**
  * @brief Update the status of the lvgl touch screen input device
@@ -94,25 +104,21 @@ void _lv_api_header_init(LvHandler * handler) {
     lv_obj_t * screen = lv_display_get_screen_active(handler->display);
     size_t w = lv_display_get_horizontal_resolution(handler->display);
 
-    lv_obj_t * header = lv_obj_create(screen);
-    lv_obj_set_size(header, w, HEADER_SIZE);
-    lv_obj_align(header, LV_ALIGN_TOP_MID, 0, 0);
-
-    char msg[128] = {0};
-
-    
-    sprintf(msg, "%.0f", CHART_DEFAULT_X_SCALE);
+    handler->header = lv_obj_create(screen);
+    lv_obj_set_size(handler->header, w, HEADER_SIZE);
+    lv_obj_align(handler->header, LV_ALIGN_TOP_MID, 0, 0);
 
     // Create labels for the header
-    handler->div_time = lv_label_create(header);
-    lv_label_set_text(handler->div_time, msg);
+    handler->div_time = lv_label_create(handler->header);
+    lv_label_set_long_mode(handler->div_time, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_align(handler->div_time, LV_ALIGN_LEFT_MID, 10, 0);
 
-    sprintf(msg, "%.0f", CHART_DEFAULT_Y_SCALE);
-
-    handler->div_volt = lv_label_create(header);
-    lv_label_set_text(handler->div_volt, msg);
+    handler->div_volt = lv_label_create(handler->header);
+    lv_label_set_long_mode(handler->div_volt, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_align(handler->div_volt, LV_ALIGN_RIGHT_MID, -10, 0);
+
+    // Update label text
+    lv_api_update_div_text(handler, CHART_DEFAULT_X_SCALE, CHART_DEFAULT_Y_SCALE);
 }
 /**
  * @brief Initialize the chart visualization for the oscilloscope
@@ -159,6 +165,8 @@ void lv_api_init(
 {
     if (handler == NULL)
         return;
+    memset(handler, 0U, sizeof(LvHandler));
+
     // Set channels data to 0
     for (size_t i = 0; i < CHART_HANDLER_CHANNEL_COUNT; ++i)
         memset(handler->channels[i], LV_CHART_POINT_NONE, CHART_POINT_COUNT * sizeof(int32_t));
@@ -195,9 +203,28 @@ void lv_api_init(
     lv_display_set_theme(handler->display, &handler->theme); 
 
     // Initialize oscilloscope chart
-    _lv_api_header_init(handler);
     _lv_api_chart_init(handler);
     _lv_api_chart_handler_init(handler);
+    _lv_api_header_init(handler);
+}
+
+void lv_api_update_div_text(LvHandler * handler, float div_time, float div_volt) {
+    if (handler == NULL)
+        return;
+
+    static bool sk = false;
+
+    char msg[HEADER_LABEL_STRING_SIZE] = { 0 };
+    if (!sk) {
+        lv_label_set_text(handler->div_time, msg);
+        sk = true;
+    }
+    snprintf(lv_label_get_text(handler->div_time), HEADER_LABEL_STRING_SIZE - 1U, "%.0f us", div_time);
+    lv_label_set_text(handler->div_time, NULL);
+
+
+    // snprintf(handler->div_volt_str, HEADER_LABEL_STRING_SIZE - 1U, "%.0f mV", div_volt);
+    // lv_label_set_text_static(handler->div_volt, NULL);
 }
 
 void lv_api_update_ts_status(TsInfo * info) {

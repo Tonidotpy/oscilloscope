@@ -24,6 +24,7 @@ typedef struct {
     lv_display_t * display;
     lv_indev_t * touch_screen;
 
+    lv_obj_t * header;
     lv_obj_t * div_time;
     lv_obj_t * div_volt;
 
@@ -53,6 +54,15 @@ void lv_api_init(
     void * frame_buffer_2,
     size_t frame_buffer_size
 );
+
+/**
+ * @brief Update the text that display the time and voltage per division in the header
+ *
+ * @param handler A ponter to the LVGL handler structure
+ * @param div_time The time per division value
+ * @param div_volt The volt per division value
+ */
+void lv_api_update_div_text(LvHandler * handler, float div_time, float div_volt);
 
 /**
  * @brief Update the current status of the touch screen
