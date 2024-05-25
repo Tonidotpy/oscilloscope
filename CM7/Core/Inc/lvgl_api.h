@@ -27,6 +27,7 @@ typedef struct {
     lv_obj_t * header;
     lv_obj_t * div_time;
     lv_obj_t * div_volt;
+    bool div_update;
 
     lv_obj_t * chart;
     lv_chart_series_t * series[CHART_HANDLER_CHANNEL_COUNT];
@@ -59,10 +60,8 @@ void lv_api_init(
  * @brief Update the text that display the time and voltage per division in the header
  *
  * @param handler A ponter to the LVGL handler structure
- * @param div_time The time per division value
- * @param div_volt The volt per division value
  */
-void lv_api_update_div_text(LvHandler * handler, float div_time, float div_volt);
+void lv_api_update_div_text(LvHandler * handler);
 
 /**
  * @brief Update the current status of the touch screen

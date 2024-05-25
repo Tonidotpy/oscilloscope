@@ -106,6 +106,9 @@ void chart_handler_set_scale(ChartHandler * handler, ChartHandlerChannel ch, flo
     // Update scale and invalidate old data
     handler->scale[ch] = value;
     chart_handler_invalidate(handler, ch);
+
+    // Notify LVGL
+    lv_api_update_div_text(handler->api);
 }
 
 float chart_handler_get_x_scale(ChartHandler * handler, ChartHandlerChannel ch) {
@@ -122,6 +125,9 @@ void chart_handler_set_x_scale(ChartHandler * handler, ChartHandlerChannel ch, f
     // Update scale and invalidate old data
     handler->x_scale[ch] = value;
     chart_handler_invalidate(handler, ch);
+
+    // Notify LVGL
+    lv_api_update_div_text(handler->api);
 }
 
 float chart_handler_get_x_offset(ChartHandler * handler, ChartHandlerChannel ch) {

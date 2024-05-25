@@ -1049,23 +1049,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
         scale *= 0.5f;
         chart_handler_set_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, scale);
 
-        float x_scale = chart_handler_get_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
-        float y_scale = chart_handler_get_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
-        lv_api_update_div_text(&lv_handler, x_scale, y_scale);
-
         sprintf(msg, "X scale: %.2f\r\n", chart_handler_get_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1));
         HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
-        
-        /*
-        float off = chart_handler_get_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
-        off -= 100.0f;
-        chart_handler_set_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, off);
-
-        sprintf(msg, "Offset: %.2f\r\n", off);
-        HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
-        */
     }
-    else if (pin == JOY_DOWN_Pin) {
+    else if (pin == JOY_UP_Pin) {
         float scale = chart_handler_get_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
         scale *= 2.0f;
         chart_handler_set_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, scale);
@@ -1073,7 +1060,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
         sprintf(msg, "Scale: %.2f\r\n", chart_handler_get_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1));
         HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
     }
-    else if (pin == JOY_UP_Pin) {
+    else if (pin == JOY_DOWN_Pin) {
         float scale = chart_handler_get_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
         scale *= 0.5f;
         chart_handler_set_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, scale);
@@ -1086,21 +1073,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
         scale *= 2.0f;
         chart_handler_set_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, scale);
 
-        // float x_scale = chart_handler_get_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
-        // float y_scale = chart_handler_get_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
-        // lv_api_update_div_text(&lv_handler, x_scale, y_scale);
-
         sprintf(msg, "X scale: %.2f\r\n", chart_handler_get_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1));
         HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
-
-        /*
-        float off = chart_handler_get_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1);
-        off += 100.0f;
-        chart_handler_set_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, off);
-
-        sprintf(msg, "Offset: %.2f\r\n", off);
-        HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
-        */
     }
 
     lock = false;

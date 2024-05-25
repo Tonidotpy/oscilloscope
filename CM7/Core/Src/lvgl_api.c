@@ -12,11 +12,10 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
+#include "chart_handler.h"
 #include "config.h"
-#include "lv_event.h"
-#include "lv_label.h"
-#include "lv_style_gen.h"
 #include "lvgl.h"
 #include "lvgl_colors.h"
 #include "stm32h7xx_hal_ltdc.h"
@@ -118,7 +117,7 @@ void _lv_api_header_init(LvHandler * handler) {
     lv_obj_align(handler->div_volt, LV_ALIGN_RIGHT_MID, -10, 0);
 
     // Update label text
-    lv_api_update_div_text(handler, CHART_DEFAULT_X_SCALE, CHART_DEFAULT_Y_SCALE);
+    lv_api_update_div_text(handler);
 }
 /**
  * @brief Initialize the chart visualization for the oscilloscope
@@ -153,6 +152,23 @@ void _lv_api_chart_init(LvHandler * handler) {
 
 void _lv_api_chart_handler_init(LvHandler * handler) {
     chart_handler_init(&handler->chart_handler, handler);
+}
+
+void _lv_api_div_set_text(lv_obj_t * label, const char * fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+    char msg[HEADER_LABEL_STRING_SIZE] = { 0 };
+    // Update time division label
+    vsnprintf(
+        msg,
+        HEADER_LABEL_STRING_SIZE - 1U,
+        fmt,
+        args
+    );
+    lv_label_set_text(label, msg);
+
+    va_end(args);
 }
 
 void lv_api_init(
@@ -208,23 +224,10 @@ void lv_api_init(
     _lv_api_header_init(handler);
 }
 
-void lv_api_update_div_text(LvHandler * handler, float div_time, float div_volt) {
+void lv_api_update_div_text(LvHandler * handler) {
     if (handler == NULL)
         return;
-
-    static bool sk = false;
-
-    char msg[HEADER_LABEL_STRING_SIZE] = { 0 };
-    if (!sk) {
-        lv_label_set_text(handler->div_time, msg);
-        sk = true;
-    }
-    snprintf(lv_label_get_text(handler->div_time), HEADER_LABEL_STRING_SIZE - 1U, "%.0f us", div_time);
-    lv_label_set_text(handler->div_time, NULL);
-
-
-    // snprintf(handler->div_volt_str, HEADER_LABEL_STRING_SIZE - 1U, "%.0f mV", div_volt);
-    // lv_label_set_text_static(handler->div_volt, NULL);
+    handler->div_update = true;
 }
 
 void lv_api_update_ts_status(TsInfo * info) {
@@ -240,6 +243,21 @@ void lv_api_run(LvHandler * handler) {
     chart_handler_routine(&handler->chart_handler);
 
     // Update LVGL internal status
+    if (handler->div_update) {
+        _lv_api_div_set_text(
+            handler->div_time,
+            "%.0f us",
+            chart_handler_get_x_scale(&handler->chart_handler, CHART_HANDLER_CHANNEL_1)
+        );
+        _lv_api_div_set_text(
+            handler->div_volt,
+            "%.0f mV",
+            chart_handler_get_scale(&handler->chart_handler, CHART_HANDLER_CHANNEL_1)
+        );
+
+        handler->div_update = false;
+    }
+
     lv_timer_handler_run_in_period(5);
 }
 

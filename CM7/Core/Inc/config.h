@@ -110,6 +110,6 @@
 #define HEADER_SIZE (35U)
 
 /** @brief Maximum length of the string label '\0' included */
-#define HEADER_LABEL_STRING_SIZE (128U)
+#define HEADER_LABEL_STRING_SIZE (32U)
 
 #endif  // CONFIG_H
