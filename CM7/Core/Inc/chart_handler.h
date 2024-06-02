@@ -62,6 +62,11 @@ typedef struct {
 
     float x_offset_paused[CHART_HANDLER_CHANNEL_COUNT]; // in us
     float x_scale_paused[CHART_HANDLER_CHANNEL_COUNT]; // in us
+
+    size_t trigger_index[CHART_HANDLER_CHANNEL_COUNT];
+    int32_t after_trigger_cnt[CHART_HANDLER_CHANNEL_COUNT];
+    int32_t before_trigger_cnt[CHART_HANDLER_CHANNEL_COUNT];
+    bool found_trigger[CHART_HANDLER_CHANNEL_COUNT];
  
     bool enabled[CHART_HANDLER_CHANNEL_COUNT];
     bool stop_request[CHART_HANDLER_CHANNEL_COUNT];

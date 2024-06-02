@@ -42,6 +42,15 @@
  */
 #define ADC_VALUE_TO_VOLTAGE(VAL) (((VAL) / (float)((1 << ADC_RESOLUTION) - 1.0f)) * ADC_VREF)
 
+/**
+ * @brief Convert a voltage in mV to the corresponding raw value 0f the ADC
+ *
+ * @param VAL The voltage in mV
+ * 
+ * @return uint16_t The ADC value 
+ */
+#define ADC_VOLTAGE_TO_VALUE(VAL) ((uint16_t)(((VAL) / (ADC_VREF)) * ((float)((1U << ADC_RESOLUTION) - 1.0f))))
+
 /*** LCD ***/
 
 /** @brief The LCD color depth in bytes */
