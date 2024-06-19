@@ -29,6 +29,8 @@ typedef struct {
     lv_obj_t * div_volt;
     bool div_update;
 
+    lv_obj_t * menu;
+
     lv_obj_t * chart;
     lv_chart_series_t * series[CHART_HANDLER_CHANNEL_COUNT];
 

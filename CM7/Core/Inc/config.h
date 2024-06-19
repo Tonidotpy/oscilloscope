@@ -116,7 +116,7 @@
 #define CHART_SAMPLE_COUNT (1024U)
 
 /** @brief Size of the header*/
-#define HEADER_SIZE (35U)
+#define HEADER_SIZE (50U)
 
 /** @brief Maximum length of the string label '\0' included */
 #define HEADER_LABEL_STRING_SIZE (32U)

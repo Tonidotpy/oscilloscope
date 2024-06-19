@@ -168,6 +168,7 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
         const float samples_per_value = time_per_value / time_per_sample;
 
         uint16_t trigger = ADC_VOLTAGE_TO_VALUE(1000.0f);
+        bool trigger_enabled = handler->ascending_trigger || handler->descending_trigger;
 
         uint16_t prev_raw = raw[ch][0];
 
@@ -184,29 +185,31 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
                 break;
             }
 
-            if(!handler->found_trigger[ch]) 
-                handler->before_trigger_cnt[ch]++;
-            else
-                handler->after_trigger_cnt[ch]++;
-
             // Copy value
             handler->raw[ch][handler->index[ch]] = raw[ch][j];
             ++handler->index[ch];
-            handler->index[ch] %= CHART_HANDLER_VALUES_COUNT;
 
-            if(handler->before_trigger_cnt[ch] < CHART_HANDLER_VALUES_COUNT / 2)
-                continue;
+            if(trigger_enabled){
+                if(!handler->found_trigger[ch]) 
+                    handler->before_trigger_cnt[ch]++;
+                else
+                    handler->after_trigger_cnt[ch]++;
 
-            if(!handler->found_trigger[ch] && ((prev_raw <= trigger && raw[ch][j] >= trigger) ||
-                                (prev_raw >= trigger && raw[ch][j] <= trigger))) {
-                handler->trigger_index[ch] = handler->index[ch];
-                handler->found_trigger[ch] = 1;
+                if(handler->before_trigger_cnt[ch] < CHART_HANDLER_VALUES_COUNT / 2)
+                    continue;
+
+                if(!handler->found_trigger[ch] && ((handler->ascending_trigger && (prev_raw <= trigger && raw[ch][j] > trigger)) ||
+                                    (handler->descending_trigger && (prev_raw >= trigger && raw[ch][j] < trigger)))) {
+                    handler->trigger_index[ch] = handler->index[ch];
+                    handler->found_trigger[ch] = 1;
+                }
+                prev_raw = raw[ch][j];
             }
-            prev_raw = raw[ch][j];
 
 
             // Check if the signal is ready to be displayed
-            if (handler->after_trigger_cnt[ch] >= CHART_HANDLER_VALUES_COUNT / 2) {
+            if ((trigger_enabled && handler->after_trigger_cnt[ch] >= CHART_HANDLER_VALUES_COUNT / 2) 
+                || (!trigger_enabled && handler->index[ch] >= CHART_HANDLER_VALUES_COUNT)) {
                 // Stop the update if requested
                 if (handler->stop_request[ch]) {
                     handler->running[ch] = false;
@@ -217,13 +220,14 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
                     handler->x_offset_paused[ch] = handler->x_offset[ch];
                 }
                 handler->after_trigger_cnt[ch] = 0;
-                // handler->before_trigger_cnt[ch] = 0;
+                handler->before_trigger_cnt[ch] = 0;
                 handler->found_trigger[ch] = 0;
                 off = 0.f;
                 handler->index[ch] = 0U;
                 handler->ready[ch] = true;
                 break;
             }
+            handler->index[ch] %= CHART_HANDLER_VALUES_COUNT;
         }
 
     }
@@ -252,8 +256,12 @@ void chart_handler_routine(ChartHandler * handler) {
                     val = ADC_VALUE_TO_VOLTAGE(handler->raw[ch][j]);
             }
             else{
-                size_t index = (i + handler->trigger_index[ch] + CHART_HANDLER_VALUES_COUNT / 2) % CHART_HANDLER_VALUES_COUNT;
-                val = ADC_VALUE_TO_VOLTAGE(handler->raw[ch][index]);
+                if(!handler->ascending_trigger && !handler->descending_trigger)
+                    val = ADC_VALUE_TO_VOLTAGE(handler->raw[ch][i]);
+                else {
+                    size_t index = (i + handler->trigger_index[ch] + CHART_HANDLER_VALUES_COUNT / 2) % CHART_HANDLER_VALUES_COUNT;
+                    val = ADC_VALUE_TO_VOLTAGE(handler->raw[ch][index]);
+                }
             }
 
             // Translate
@@ -276,6 +284,7 @@ void chart_handler_invalidate(ChartHandler * handler, ChartHandlerChannel ch) {
 
     // Reset data
     handler->ready[ch] = false;
+    handler->before_trigger_cnt[ch] = 0U;
     handler->after_trigger_cnt[ch] = 0U;
     handler->index[ch] = 0U;
 }

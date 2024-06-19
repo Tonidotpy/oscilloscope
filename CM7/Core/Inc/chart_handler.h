@@ -63,6 +63,7 @@ typedef struct {
     float x_offset_paused[CHART_HANDLER_CHANNEL_COUNT]; // in us
     float x_scale_paused[CHART_HANDLER_CHANNEL_COUNT]; // in us
 
+    bool ascending_trigger, descending_trigger;
     size_t trigger_index[CHART_HANDLER_CHANNEL_COUNT];
     int32_t after_trigger_cnt[CHART_HANDLER_CHANNEL_COUNT];
     int32_t before_trigger_cnt[CHART_HANDLER_CHANNEL_COUNT];

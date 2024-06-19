@@ -99,6 +99,64 @@ static void _lv_update_ts_indev_callback(lv_indev_t * touch_screen, lv_indev_dat
     data->state = ts_info.detected ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
     ts_get_info(&ts_info);
 }
+static void menu_btn_event_handler(lv_event_t * e) {
+    LvHandler * handler = (LvHandler *)lv_event_get_user_data(e);
+    if(lv_obj_has_flag(handler->menu, LV_OBJ_FLAG_HIDDEN))
+        lv_obj_clear_flag(handler->menu, LV_OBJ_FLAG_HIDDEN);
+    else
+        lv_obj_add_flag(handler->menu, LV_OBJ_FLAG_HIDDEN);
+}
+static void trigger_checkbox_handler_asc(lv_event_t * e) {
+    LvHandler * handler = (LvHandler *)lv_event_get_user_data(e);
+    lv_obj_t * obj = lv_event_get_target(e);
+    handler->chart_handler.ascending_trigger = lv_obj_get_state(obj) & LV_STATE_CHECKED;
+}
+static void trigger_checkbox_handler_desc(lv_event_t * e) {
+    LvHandler * handler = (LvHandler *)lv_event_get_user_data(e);
+    lv_obj_t * obj = lv_event_get_target(e);
+    handler->chart_handler.descending_trigger = lv_obj_get_state(obj) & LV_STATE_CHECKED;
+}
+void _lv_api_menu_init(LvHandler * handler) {
+    lv_obj_t * screen = lv_display_get_screen_active(handler->display);
+    size_t h = lv_display_get_vertical_resolution(handler->display) - HEADER_SIZE;
+    size_t w = lv_display_get_horizontal_resolution(handler->display);
+
+    handler->menu = lv_menu_create(screen);
+    lv_obj_set_size(handler->menu, w, h);
+    lv_obj_align(handler->menu, LV_ALIGN_BOTTOM_MID, 0, 0);
+    // lv_obj_set_style_bg_opa(handler->menu, LV_OPA_70, 0);
+    // lv_obj_set_style_bg_color(handler->menu, lv_color_hex(0x000000), 0);
+    lv_obj_add_flag(handler->menu, LV_OBJ_FLAG_HIDDEN);
+
+    // Create a tabview object
+    lv_obj_t * tabview = lv_tabview_create(handler->menu);
+
+    // Add tabs to the tabview
+    lv_obj_t * trigger_tab = lv_tabview_add_tab(tabview, "Trigger");
+    lv_obj_t * tab2 = lv_tabview_add_tab(tabview, "Tab 2");
+
+    lv_obj_set_flex_flow(trigger_tab, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(trigger_tab, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
+
+    lv_obj_t * cb1 = lv_checkbox_create(trigger_tab);
+    lv_checkbox_set_text(cb1, "Enable ascending trigger");
+    lv_obj_add_event_cb(cb1, trigger_checkbox_handler_desc, LV_EVENT_ALL, handler);
+    lv_obj_set_style_pad_all(cb1, 40, LV_PART_INDICATOR);
+    lv_obj_set_style_width(cb1, 40, LV_PART_INDICATOR); 
+    lv_obj_set_style_height(cb1, 40, LV_PART_INDICATOR);
+    lv_obj_update_layout(cb1);
+    lv_obj_t * cb2 = lv_checkbox_create(trigger_tab);
+    lv_checkbox_set_text(cb2, "Enable descending trigger");
+    lv_obj_add_event_cb(cb2, trigger_checkbox_handler_asc, LV_EVENT_ALL, handler);
+    lv_obj_set_style_pad_all(cb2, 40, LV_PART_INDICATOR);
+    lv_obj_set_style_width(cb2, 40, LV_PART_INDICATOR); 
+    lv_obj_set_style_height(cb2, 40, LV_PART_INDICATOR);
+    lv_obj_update_layout(cb2);
+
+    lv_obj_t * label2 = lv_label_create(tab2);
+    lv_label_set_text(label2, "This is Tab 2");
+    lv_obj_align(label2, LV_ALIGN_CENTER, 0, 0);
+}
 void _lv_api_header_init(LvHandler * handler) {
     lv_obj_t * screen = lv_display_get_screen_active(handler->display);
     size_t w = lv_display_get_horizontal_resolution(handler->display);
@@ -115,6 +173,13 @@ void _lv_api_header_init(LvHandler * handler) {
     handler->div_volt = lv_label_create(handler->header);
     lv_label_set_long_mode(handler->div_volt, LV_LABEL_LONG_SCROLL_CIRCULAR);
     lv_obj_align(handler->div_volt, LV_ALIGN_RIGHT_MID, -10, 0);
+
+    // Create a button
+    lv_obj_t * btn = lv_btn_create(handler->header);
+    lv_obj_set_size(btn, HEADER_SIZE+5, HEADER_SIZE-5);
+    lv_obj_align(btn, LV_ALIGN_CENTER, 0, 0);
+    // Set button event
+    lv_obj_add_event_cb(btn, menu_btn_event_handler, LV_EVENT_CLICKED, handler);
 
     // Update label text
     lv_api_update_div_text(handler);
@@ -222,6 +287,7 @@ void lv_api_init(
     _lv_api_chart_init(handler);
     _lv_api_chart_handler_init(handler);
     _lv_api_header_init(handler);
+    _lv_api_menu_init(handler);
 }
 
 void lv_api_update_div_text(LvHandler * handler) {
