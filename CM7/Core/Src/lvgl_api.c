@@ -27,6 +27,11 @@ extern LTDC_HandleTypeDef hltdc;
 // Master touch screen status
 static TsInfo ts_info;
 
+struct _shared {
+	uint32_t generator_index;
+};
+volatile struct _shared * const shared_data = (struct _shared *)0x38001000;
+
 /**
  * @brief Lvgl callback used by the library that gets called after the rendering has finished
  * and the content has to be displayed on the screen
@@ -106,16 +111,64 @@ static void menu_btn_event_handler(lv_event_t * e) {
     else
         lv_obj_add_flag(handler->menu, LV_OBJ_FLAG_HIDDEN);
 }
+
 static void trigger_checkbox_handler_asc(lv_event_t * e) {
     LvHandler * handler = (LvHandler *)lv_event_get_user_data(e);
     lv_obj_t * obj = lv_event_get_target(e);
     handler->chart_handler.ascending_trigger = lv_obj_get_state(obj) & LV_STATE_CHECKED;
 }
+
 static void trigger_checkbox_handler_desc(lv_event_t * e) {
     LvHandler * handler = (LvHandler *)lv_event_get_user_data(e);
     lv_obj_t * obj = lv_event_get_target(e);
     handler->chart_handler.descending_trigger = lv_obj_get_state(obj) & LV_STATE_CHECKED;
 }
+
+static void _lv_api_signal_generator_event_handler(lv_event_t * e) {
+    lv_obj_t * obj = lv_event_get_target(e);
+    shared_data->generator_index = lv_obj_get_index(obj);
+    LvHandler * handler = (LvHandler *)lv_event_get_user_data(e);
+    lv_obj_add_flag(handler->menu, LV_OBJ_FLAG_HIDDEN);
+}
+
+lv_obj_t * _lv_api_create_chart(lv_obj_t * parent, uint32_t *buffer) {
+    // Create a chart object
+    lv_obj_t * chart = lv_chart_create(parent);
+    lv_obj_set_size(chart, 200, 150); // Set the size of the chart
+    // lv_obj_align(chart, LV_ALIGN_CENTER, 0, 0); // Align the chart to the center
+
+    // Create a data series on the chart
+    lv_chart_series_t * series = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
+
+    // Set the number of points in the chart
+    lv_chart_set_point_count(chart, WAVES_SIZE);
+
+    // Set the y-values from the array to the chart series
+    for(int i = 0; i < WAVES_SIZE; i++) {
+        lv_chart_set_next_value(chart, series, buffer[i]);
+    }
+
+    // Optionally, configure chart properties such as range, type, and grid
+    lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 0, 0xffff); // Set the y-axis range
+    // lv_chart_set_type(chart, LV_CHART_TYPE_LINE); // Set the chart type to line (can be BAR, POINT, etc.)
+    // lv_chart_set_div_line_count(chart, 5, 5); // Set the number of division lines on the chart
+    return chart;
+}
+
+void _lv_api_init_signal_generator_tab(LvHandler * handler, lv_obj_t * tab) {
+    lv_obj_t * parent = lv_list_create(tab);
+    lv_obj_set_size(parent, lv_pct(100), lv_pct(100));
+    lv_obj_center(parent);
+
+    /* Create a number of child objects within the parent container */
+    for (int i = 0; i < WAVES_TYPE_COUNT; i++) {
+        lv_obj_t * obj = _lv_api_create_chart(parent, waves_table[i]);
+                
+        /* Add event handler for the object */
+        lv_obj_add_event_cb(obj, _lv_api_signal_generator_event_handler, LV_EVENT_CLICKED, handler);
+    }
+}
+
 void _lv_api_menu_init(LvHandler * handler) {
     lv_obj_t * screen = lv_display_get_screen_active(handler->display);
     size_t h = lv_display_get_vertical_resolution(handler->display) - HEADER_SIZE;
@@ -133,7 +186,7 @@ void _lv_api_menu_init(LvHandler * handler) {
 
     // Add tabs to the tabview
     lv_obj_t * trigger_tab = lv_tabview_add_tab(tabview, "Trigger");
-    lv_obj_t * tab2 = lv_tabview_add_tab(tabview, "Tab 2");
+    lv_obj_t * generator_tab = lv_tabview_add_tab(tabview, "Signal generator");
 
     lv_obj_set_flex_flow(trigger_tab, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(trigger_tab, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
@@ -153,10 +206,9 @@ void _lv_api_menu_init(LvHandler * handler) {
     lv_obj_set_style_height(cb2, 40, LV_PART_INDICATOR);
     lv_obj_update_layout(cb2);
 
-    lv_obj_t * label2 = lv_label_create(tab2);
-    lv_label_set_text(label2, "This is Tab 2");
-    lv_obj_align(label2, LV_ALIGN_CENTER, 0, 0);
+    _lv_api_init_signal_generator_tab(handler, generator_tab);
 }
+
 void _lv_api_header_init(LvHandler * handler) {
     lv_obj_t * screen = lv_display_get_screen_active(handler->display);
     size_t w = lv_display_get_horizontal_resolution(handler->display);

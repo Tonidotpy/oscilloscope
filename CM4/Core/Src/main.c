@@ -61,6 +61,10 @@ static void MX_DAC1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+struct _shared {
+	uint32_t generator_index;
+};
+volatile struct _shared * const shared_data = (struct _shared *)0x38001000;
 
 /* USER CODE END 0 */
 
@@ -110,6 +114,8 @@ int main(void)
 
   int ind = 0;
   int freq = HAL_GetTick();
+
+  shared_data->generator_index = 0;
   
   /* USER CODE END 2 */
 
@@ -117,7 +123,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, (uint32_t)(waves_table[WAVES_TYPE_STAIR][ind % WAVES_SIZE] / 16));
+    HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, (uint32_t)(waves_table[shared_data->generator_index][ind % WAVES_SIZE] / 16));
 
     if (HAL_GetTick() - freq >= 5) {
         ind++;

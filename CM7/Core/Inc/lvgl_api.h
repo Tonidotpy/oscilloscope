@@ -13,11 +13,13 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "lvgl.h"
 #include "touch_screen.h"
 #include "chart_handler.h"
 #include "config.h"
+#include "waves.h"
 
 typedef struct {
     lv_theme_t theme;
