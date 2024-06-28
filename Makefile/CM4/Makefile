@@ -20,9 +20,9 @@ TARGET = oscilloscope_CM4
 # building variables
 ######################################
 # debug build?
-DEBUG = 1
+DEBUG := $(if $(DEBUG), $(DEBUG), 1)
 # optimization
-OPT = -Og
+OPT := $(if $(OPT), $(OPT), -Og)
 
 
 #######################################

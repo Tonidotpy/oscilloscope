@@ -12,6 +12,8 @@
 #include "lvgl.h"
 
 #define LV_WHITE  ((lv_color_t)LV_COLOR_MAKE(0xFF, 0xFF, 0xFF))
+#define LV_LIGHT_GRAY ((lv_color_t)LV_COLOR_MAKE(0xDE, 0xDE, 0xDE))
+#define LV_DARK_GRAY  ((lv_color_t)LV_COLOR_MAKE(0x4E, 0x4E, 0x4E))
 #define LV_BLACK  ((lv_color_t)LV_COLOR_MAKE(0x14, 0x14, 0x14))
 
 #define LV_RED    ((lv_color_t)LV_COLOR_MAKE(0xCB, 0x32, 0x34))

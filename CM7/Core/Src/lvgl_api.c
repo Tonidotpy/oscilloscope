@@ -81,8 +81,125 @@ static void _lv_apply_theme(lv_theme_t * th, lv_obj_t * obj) {
     else if (lv_obj_check_type(obj, &lv_label_class)) {
         static lv_style_t label_main_style;
         lv_style_init(&label_main_style);
-        lv_style_set_text_color(&label_main_style, LV_BLACK);
+        // lv_style_set_text_color(&label_main_style, LV_BLACK);
         lv_obj_add_style(obj, &label_main_style, LV_PART_MAIN);
+    }
+    else if (lv_obj_check_type(obj, &lv_menu_class)) {
+        static lv_style_t menu_main_style;
+        lv_style_init(&menu_main_style);
+        lv_style_set_bg_color(&menu_main_style, LV_WHITE);
+
+        // Add shadow
+        // lv_style_set_shadow_width(&menu_main_style, 7);
+        // lv_style_set_shadow_color(&menu_main_style, LV_BLACK);
+
+        lv_obj_add_style(obj, &menu_main_style, LV_PART_MAIN);
+    }
+    else if (lv_obj_check_type(obj, &lv_button_class)) {
+        static lv_style_t button_main_style;
+        static lv_style_t tabview_button_main_style;
+        static lv_style_t tabview_button_checked_style;
+
+        // Button pressed transition
+        static lv_style_transition_dsc_t button_pressed_transition;
+        const static lv_style_prop_t button_pressed_props[] = {
+            LV_STYLE_BG_OPA, LV_STYLE_BG_COLOR,
+            0
+        };
+        lv_style_transition_dsc_init(
+            &button_pressed_transition,
+            button_pressed_props,
+            lv_anim_path_linear,
+            200U,
+            0U,
+            NULL
+        );
+
+        /*
+         * Change tabview button appearance
+         *
+         * Apparently the parent of the button in a tabview is not the tabview
+         * itself but it is a bar (or another component) which is a child of the
+         * actual tabview
+         */
+        lv_obj_t * bar = lv_obj_get_parent(obj);
+        lv_obj_t * tabview = lv_obj_get_parent(bar);
+        if (lv_obj_check_type(tabview, &lv_tabview_class)) {
+            // Main button style
+            lv_style_init(&tabview_button_main_style);
+            lv_style_set_bg_color(&tabview_button_main_style, lv_color_lighten(LV_BLACK, 8));
+            lv_style_set_text_color(&tabview_button_main_style, LV_WHITE);
+            lv_obj_add_style(obj, &tabview_button_main_style, LV_PART_MAIN);
+
+            // Checked button style
+            lv_style_init(&tabview_button_checked_style);
+            lv_style_set_bg_color(&tabview_button_checked_style, lv_color_lighten(LV_BLACK, 18));
+            lv_obj_add_style(obj, &tabview_button_checked_style, LV_PART_MAIN | LV_STATE_CHECKED);
+
+            // Style when pressed
+            static lv_style_t button_pressed_style;
+            lv_style_init(&button_pressed_style);
+            lv_style_set_bg_color(&button_pressed_style, LV_BLACK);
+            // lv_style_set_transition(&button_pressed_style, &button_pressed_transition);
+            lv_obj_add_style(obj, &button_pressed_style, LV_STATE_PRESSED);
+        }
+        else {
+            // Main button style
+            lv_style_init(&button_main_style);
+            lv_style_set_bg_color(&button_main_style, LV_WHITE);
+            lv_style_set_pad_hor(&button_main_style, 15);
+            // lv_style_set_transition(&button_main_style, &button_pressed_transition);
+            lv_obj_add_style(obj, &button_main_style, LV_PART_MAIN);
+
+            // Style when pressed
+            static lv_style_t button_pressed_style;
+            lv_style_init(&button_pressed_style);
+            lv_style_set_bg_color(&button_pressed_style, LV_LIGHT_GRAY);
+            // lv_style_set_transition(&button_pressed_style, &button_pressed_transition);
+            lv_obj_add_style(obj, &button_pressed_style, LV_STATE_PRESSED);
+        }
+    }
+    else if (lv_obj_check_type(obj, &lv_tabview_class)) {
+        static lv_style_t tabview_main_style;
+        lv_style_init(&tabview_main_style); 
+        lv_style_set_bg_color(&tabview_main_style, LV_BLACK);
+        lv_obj_add_style(obj, &tabview_main_style, LV_PART_MAIN);
+    }
+    else if (lv_obj_check_type(obj, &lv_checkbox_class)) {
+        static lv_style_t checkbox_main_style;
+        lv_style_init(&checkbox_main_style); 
+        lv_style_set_bg_color(&checkbox_main_style, LV_BLACK);
+        lv_style_set_text_color(&checkbox_main_style, LV_WHITE);
+
+        // Space between checkbox and label
+        lv_style_set_pad_column(&checkbox_main_style, 10U);
+
+        // Margin
+        lv_style_set_margin_top(&checkbox_main_style, 12U);
+        lv_style_set_margin_bottom(&checkbox_main_style, 12U);
+        lv_style_set_margin_left(&checkbox_main_style, 8U);
+        lv_style_set_margin_right(&checkbox_main_style, 8U);
+
+        lv_obj_add_style(obj, &checkbox_main_style, LV_PART_MAIN);
+
+        static lv_style_t tabview_tickbox_style;
+        lv_style_init(&tabview_tickbox_style);
+        lv_style_set_text_font(&tabview_tickbox_style, LV_FONT_DEFAULT);
+        lv_style_set_pad_all(&tabview_tickbox_style, 5U);
+        lv_style_set_bg_color(&tabview_tickbox_style, LV_WHITE);
+        lv_obj_add_style(obj, &tabview_tickbox_style, LV_PART_INDICATOR);
+
+        static lv_style_t tabview_tickbox_checked_style;
+        lv_style_init(&tabview_tickbox_checked_style);
+        lv_style_set_bg_color(&tabview_tickbox_checked_style, LV_YELLOW);
+        lv_obj_add_style(obj, &tabview_tickbox_checked_style, LV_PART_INDICATOR | LV_STATE_CHECKED);
+    }
+    else if (lv_obj_check_type(obj, &lv_list_class)) {
+        static lv_style_t list_main_style;
+        lv_style_init(&list_main_style);
+        lv_style_set_bg_color(&list_main_style, LV_BLACK);
+        lv_style_set_pad_all(&list_main_style, 20U);
+        lv_obj_add_style(obj, &list_main_style, LV_PART_MAIN);
     }
 }
 /**
@@ -135,7 +252,6 @@ lv_obj_t * _lv_api_create_chart(lv_obj_t * parent, uint32_t *buffer) {
     // Create a chart object
     lv_obj_t * chart = lv_chart_create(parent);
     lv_obj_set_size(chart, 200, 150); // Set the size of the chart
-    // lv_obj_align(chart, LV_ALIGN_CENTER, 0, 0); // Align the chart to the center
 
     // Create a data series on the chart
     lv_chart_series_t * series = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
@@ -150,13 +266,34 @@ lv_obj_t * _lv_api_create_chart(lv_obj_t * parent, uint32_t *buffer) {
 
     // Optionally, configure chart properties such as range, type, and grid
     lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, 0, 0xffff); // Set the y-axis range
-    // lv_chart_set_type(chart, LV_CHART_TYPE_LINE); // Set the chart type to line (can be BAR, POINT, etc.)
-    // lv_chart_set_div_line_count(chart, 5, 5); // Set the number of division lines on the chart
     return chart;
 }
 
-void _lv_api_init_signal_generator_tab(LvHandler * handler, lv_obj_t * tab) {
-    lv_obj_t * parent = lv_list_create(tab);
+void _lv_api_init_trigger_tab(LvHandler * handler, lv_obj_t * tabview) {
+    lv_obj_t * trigger_tab = lv_tabview_add_tab(tabview, "Trigger");
+    
+    lv_obj_set_flex_flow(trigger_tab, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(trigger_tab, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+
+    lv_obj_t * cb1 = lv_checkbox_create(trigger_tab);
+    lv_checkbox_set_text(cb1, "Enable ascending trigger");
+    lv_obj_add_event_cb(cb1, trigger_checkbox_handler_desc, LV_EVENT_ALL, handler);
+    lv_obj_update_layout(cb1);
+
+    lv_obj_t * cb2 = lv_checkbox_create(trigger_tab);
+    lv_checkbox_set_text(cb2, "Enable descending trigger");
+    lv_obj_add_event_cb(cb2, trigger_checkbox_handler_asc, LV_EVENT_ALL, handler);
+    lv_obj_update_layout(cb2);
+
+    // Set style which cant be set inside the theme
+    lv_obj_set_style_bg_color(trigger_tab, LV_BLACK, LV_PART_MAIN);
+    lv_obj_set_style_pad_all(trigger_tab, 30U, LV_PART_MAIN);
+}
+
+void _lv_api_init_signal_generator_tab(LvHandler * handler, lv_obj_t * tabview) {
+    lv_obj_t * generator_tab = lv_tabview_add_tab(tabview, "Signal generator");
+
+    lv_obj_t * parent = lv_list_create(generator_tab);
     lv_obj_set_size(parent, lv_pct(100), lv_pct(100));
     lv_obj_center(parent);
 
@@ -167,6 +304,10 @@ void _lv_api_init_signal_generator_tab(LvHandler * handler, lv_obj_t * tab) {
         /* Add event handler for the object */
         lv_obj_add_event_cb(obj, _lv_api_signal_generator_event_handler, LV_EVENT_CLICKED, handler);
     }
+
+    // Set style which cant be set inside the theme
+    lv_obj_set_style_bg_color(generator_tab, LV_BLACK, LV_PART_MAIN);
+    lv_obj_set_style_pad_row(parent, 20U, LV_PART_MAIN);
 }
 
 void _lv_api_menu_init(LvHandler * handler) {
@@ -177,36 +318,16 @@ void _lv_api_menu_init(LvHandler * handler) {
     handler->menu = lv_menu_create(screen);
     lv_obj_set_size(handler->menu, w, h);
     lv_obj_align(handler->menu, LV_ALIGN_BOTTOM_MID, 0, 0);
-    // lv_obj_set_style_bg_opa(handler->menu, LV_OPA_70, 0);
-    // lv_obj_set_style_bg_color(handler->menu, lv_color_hex(0x000000), 0);
     lv_obj_add_flag(handler->menu, LV_OBJ_FLAG_HIDDEN);
 
     // Create a tabview object
     lv_obj_t * tabview = lv_tabview_create(handler->menu);
+    lv_tabview_set_tab_bar_position(tabview, LV_DIR_RIGHT);
+    lv_tabview_set_tab_bar_size(tabview, 200U);
 
     // Add tabs to the tabview
-    lv_obj_t * trigger_tab = lv_tabview_add_tab(tabview, "Trigger");
-    lv_obj_t * generator_tab = lv_tabview_add_tab(tabview, "Signal generator");
-
-    lv_obj_set_flex_flow(trigger_tab, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(trigger_tab, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
-
-    lv_obj_t * cb1 = lv_checkbox_create(trigger_tab);
-    lv_checkbox_set_text(cb1, "Enable ascending trigger");
-    lv_obj_add_event_cb(cb1, trigger_checkbox_handler_desc, LV_EVENT_ALL, handler);
-    lv_obj_set_style_pad_all(cb1, 40, LV_PART_INDICATOR);
-    lv_obj_set_style_width(cb1, 40, LV_PART_INDICATOR); 
-    lv_obj_set_style_height(cb1, 40, LV_PART_INDICATOR);
-    lv_obj_update_layout(cb1);
-    lv_obj_t * cb2 = lv_checkbox_create(trigger_tab);
-    lv_checkbox_set_text(cb2, "Enable descending trigger");
-    lv_obj_add_event_cb(cb2, trigger_checkbox_handler_asc, LV_EVENT_ALL, handler);
-    lv_obj_set_style_pad_all(cb2, 40, LV_PART_INDICATOR);
-    lv_obj_set_style_width(cb2, 40, LV_PART_INDICATOR); 
-    lv_obj_set_style_height(cb2, 40, LV_PART_INDICATOR);
-    lv_obj_update_layout(cb2);
-
-    _lv_api_init_signal_generator_tab(handler, generator_tab);
+    _lv_api_init_trigger_tab(handler, tabview);
+    _lv_api_init_signal_generator_tab(handler, tabview);
 }
 
 void _lv_api_header_init(LvHandler * handler) {
@@ -228,10 +349,17 @@ void _lv_api_header_init(LvHandler * handler) {
 
     // Create a button
     lv_obj_t * btn = lv_btn_create(handler->header);
-    lv_obj_set_size(btn, HEADER_SIZE+5, HEADER_SIZE-5);
+    lv_obj_set_size(btn, LV_SIZE_CONTENT, HEADER_SIZE);
     lv_obj_align(btn, LV_ALIGN_CENTER, 0, 0);
+
     // Set button event
     lv_obj_add_event_cb(btn, menu_btn_event_handler, LV_EVENT_CLICKED, handler);
+    
+    // Add label to button
+    lv_obj_t * btn_label = lv_label_create(btn);
+    lv_label_set_text(btn_label, "Menu");
+    lv_obj_center(btn_label);
+    lv_obj_set_style_text_font(btn_label, &lv_font_montserrat_20, LV_PART_MAIN);
 
     // Update label text
     lv_api_update_div_text(handler);

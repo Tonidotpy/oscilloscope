@@ -19,9 +19,13 @@
 # building variables
 ######################################
 # debug build?
-DEBUG = 1
+DEBUG = 0
 # optimization
+ifeq ($(DEBUG), 1)
 OPT = -Og
+else
+OPT = -O3
+endif
 
 
 #######################################
@@ -83,6 +87,7 @@ endif
 
 
 # default action: build all
+export
 all:
 	cd	CM4 && $(MAKE)
 	cd	CM7 && $(MAKE)
