@@ -240,16 +240,40 @@ static void trigger_checkbox_handler_asc(lv_event_t * e) {
     LvHandler * handler = (LvHandler *)lv_event_get_user_data(e);
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t * obj = lv_event_get_target(e);
-    if (code == LV_EVENT_VALUE_CHANGED)
-        handler->chart_handler.ascending_trigger = lv_obj_get_state(obj) & LV_STATE_CHECKED;
+    if (code == LV_EVENT_VALUE_CHANGED) {
+        bool checked = lv_obj_get_state(obj) & LV_STATE_CHECKED;
+        handler->chart_handler.ascending_trigger = checked;
+
+        for (size_t ch = 0; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
+            if (!checked && !handler->chart_handler.descending_trigger)
+                lv_api_hide_trigger_line(handler, ch);
+            else {
+                float val = chart_handler_voltage_to_grid_units(&handler->chart_handler, ch, 1000.f);
+                val = lv_api_grid_units_to_screen(ch, val);
+                lv_api_update_trigger_line(handler, ch, val);
+            }
+        }
+    }
 }
 
 static void trigger_checkbox_handler_desc(lv_event_t * e) {
     LvHandler * handler = (LvHandler *)lv_event_get_user_data(e);
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t * obj = lv_event_get_target(e);
-    if (code == LV_EVENT_VALUE_CHANGED)
-        handler->chart_handler.descending_trigger = lv_obj_get_state(obj) & LV_STATE_CHECKED;
+    if (code == LV_EVENT_VALUE_CHANGED) {
+        bool checked = lv_obj_get_state(obj) & LV_STATE_CHECKED;
+        handler->chart_handler.descending_trigger = checked;
+
+        for (size_t ch = 0; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
+            if (!checked && !handler->chart_handler.ascending_trigger)
+                lv_api_hide_trigger_line(handler, ch);
+            else {
+                float val = chart_handler_voltage_to_grid_units(&handler->chart_handler, ch, 1000.f);
+                val = lv_api_grid_units_to_screen(ch, val);
+                lv_api_update_trigger_line(handler, ch, val);
+            }
+        }
+    }
 }
 
 static void _lv_api_signal_generator_event_handler(lv_event_t * e) {
@@ -484,6 +508,14 @@ void lv_api_init(
     _lv_api_menu_init(handler);
 }
 
+float lv_api_grid_units_to_screen(ChartHandlerChannel ch, float value) {
+    const float div[CHART_HANDLER_CHANNEL_COUNT] = {
+        CHART_AXIS_PRIMARY_Y_MAX_COORD / (float)(CHART_Y_DIVISION_COUNT),
+        CHART_AXIS_SECONDARY_Y_MAX_COORD / (float)(CHART_Y_DIVISION_COUNT)
+    };
+    return value * div[ch];
+}
+
 void lv_api_update_div_text(LvHandler * handler) {
     if (handler == NULL)
         return;
@@ -496,16 +528,36 @@ void lv_api_update_ts_status(TsInfo * info) {
     memcpy(&ts_info, info, sizeof(ts_info));
 }
 
-void lv_api_draw_trigger_line(LvHandler * handler, ChartHandlerChannel ch) {
+void lv_api_update_trigger_line(LvHandler * handler, ChartHandlerChannel ch, int32_t height) {
     if (handler == NULL)
         return;
 
-    // Draw line
     static lv_point_precise_t points[] = {
-        { LCD_WIDTH / 2U, 0 },
-        { LCD_WIDTH / 2U, LCD_HEIGHT - HEADER_SIZE }
+        { 0, 0 },
+        { LCD_WIDTH, 0 }
     };
+
+    // Do not draw the line if outside the screen bounds
+    if (height < 0 || height >= CHART_HEIGHT) {
+        lv_obj_add_flag(handler->trigger_line[ch], LV_OBJ_FLAG_HIDDEN);
+        return;
+    }
+
+    // Update line position
+    lv_obj_clear_flag(handler->trigger_line[ch], LV_OBJ_FLAG_HIDDEN);
+    // Reverse height because 0 start from the top
+    // BUG: 8 is added to compensate for the error
+    height = CHART_HEIGHT - (height - 8);
+    points[0].y = points[1].y = height;
+
+    // Draw line
     lv_line_set_points(handler->trigger_line[ch], points, 2U);
+}
+
+void lv_api_hide_trigger_line(LvHandler * handler, ChartHandlerChannel ch) {
+    if (handler == NULL)
+        return;
+    lv_obj_add_flag(handler->trigger_line[ch], LV_OBJ_FLAG_HIDDEN);
 }
 
 void lv_api_run(LvHandler * handler) {
@@ -549,10 +601,6 @@ void lv_api_update_points(
     if (handler == NULL || values == NULL)
         return;
 
-    const float div[CHART_HANDLER_CHANNEL_COUNT] = {
-        CHART_AXIS_PRIMARY_Y_MAX_COORD / (float)(CHART_Y_DIVISION_COUNT),
-        CHART_AXIS_SECONDARY_Y_MAX_COORD / (float)(CHART_Y_DIVISION_COUNT)
-    };
     const float dt = size / (float)CHART_POINT_COUNT;
     // const size_t step = dt == 0.f ? 1U : dt;
     
@@ -566,7 +614,7 @@ void lv_api_update_points(
             val = LV_CHART_POINT_NONE;
         else {
             // Convert to screen space
-            val *= div[ch];
+            val = lv_api_grid_units_to_screen(ch, val);
         }
 
         // Copy value

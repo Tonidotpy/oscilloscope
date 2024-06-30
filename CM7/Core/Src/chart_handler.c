@@ -80,6 +80,7 @@ void chart_handler_init(ChartHandler * handler, void * api) {
         handler->x_scale_paused[ch] = handler->x_scale[ch] = CHART_DEFAULT_X_SCALE; // CHART_MIN_X_SCALE;
         handler->scale[ch] = CHART_DEFAULT_Y_SCALE;
 
+        handler->trigger[ch] = ADC_VOLTAGE_TO_VALUE(1000.f);
         handler->trigger_index[ch] = -1;
     }
 }
@@ -200,6 +201,12 @@ void chart_handler_set_x_offset(ChartHandler * handler, ChartHandlerChannel ch, 
     chart_handler_invalidate(handler, ch);
 }
 
+float chart_handler_voltage_to_grid_units(ChartHandler * handler, ChartHandlerChannel ch, float value) {
+    if (handler == NULL)
+        return 0.f;
+    return value / handler->scale[ch];
+}
+
 // TODO: Add horizontal offset
 void chart_handler_update(ChartHandler * handler, uint32_t t) {
     if (handler == NULL)
@@ -222,8 +229,6 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
         // Number of values for each sample
         const float samples_per_value = time_per_value / time_per_sample;
 
-        // TODO: Move trigger inside handler
-        uint16_t trigger = ADC_VOLTAGE_TO_VALUE(1000.0f);
         static uint16_t prev_raw = 0U;
 
         volatile static float off = 0.f; 
@@ -250,8 +255,8 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
                 if (handler->trigger_before_count[ch] < CHART_HANDLER_VALUES_COUNT / 2U)
                     ++handler->trigger_before_count[ch];
                 else {
-                    bool asc = handler->ascending_trigger && _chart_handler_is_rising_edge(prev_raw, value, trigger);
-                    bool desc = handler->descending_trigger && _chart_handler_is_falling_edge(prev_raw, value, trigger);
+                    bool asc = handler->ascending_trigger && _chart_handler_is_rising_edge(prev_raw, value, handler->trigger[ch]);
+                    bool desc = handler->descending_trigger && _chart_handler_is_falling_edge(prev_raw, value, handler->trigger[ch]);
 
                     // Check if signal has crossed the trigger
                     if (handler->trigger_index[ch] < 0 && (asc || desc))
@@ -331,7 +336,7 @@ void chart_handler_routine(ChartHandler * handler) {
             val += handler->offset[ch];
 
             // Convert to grid units
-            val /= handler->scale[ch];
+            val = chart_handler_voltage_to_grid_units(handler, ch, val);
 
             // Copy data
             handler->data[ch][index] = val;

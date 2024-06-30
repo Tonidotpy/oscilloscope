@@ -63,6 +63,16 @@ void lv_api_init(
 );
 
 /**
+ * @brief Convert a value in grid units to screen space
+ *
+ * @param ch The selected channel
+ * @param value The value to convert in grid units
+ *
+ * @return float The converted value in screen space
+ */
+float lv_api_grid_units_to_screen(ChartHandlerChannel ch, float value);
+
+/**
  * @brief Update the text that display the time and voltage per division in the header
  *
  * @param handler A ponter to the LVGL handler structure
@@ -77,13 +87,19 @@ void lv_api_update_div_text(LvHandler * handler);
  */
 void lv_api_update_ts_status(TsInfo * info);
 
+/** @brief Hide the trigger line */
+void lv_api_hide_trigger_line(LvHandler * handler, ChartHandlerChannel ch);
+
 /**
- * @brief Draw the trigger line on the screen
+ * @brief Update the trigger line position on the screen
+ *
+ * @details If the line is hidden it shows automatically if inside the screen bounds
  *
  * @param handler The LVGL handler structure
  * @param ch The channel to select
+ * @param height The height of the trigger (in screen coordinates)
  */
-void lv_api_draw_trigger_line(LvHandler * handler, ChartHandlerChannel ch);
+void lv_api_update_trigger_line(LvHandler * handler, ChartHandlerChannel ch, int32_t height);
 
 /**
  * @brief Run the internal logic of LVGL

@@ -65,6 +65,7 @@ typedef struct {
     float x_scale_paused[CHART_HANDLER_CHANNEL_COUNT]; // in us
 
     // Trigger
+    uint16_t trigger[CHART_HANDLER_CHANNEL_COUNT];
     bool ascending_trigger, descending_trigger;
 
     // Index of the raw value that crossed the trigger
@@ -222,6 +223,17 @@ float chart_handler_get_x_offset(ChartHandler * handler, ChartHandlerChannel ch)
  * @param The value of the offset in us
  */
 void chart_handler_set_x_offset(ChartHandler * handler, ChartHandlerChannel ch, float value);
+
+/**
+ * @brief Convert a voltage in millivot to grid units (i.e. the divisions of the grid)
+ *
+ * @param handler A pointer to the chart handler structure
+ * @param ch The channel to select
+ * @param value The value to convert in millivolt
+ *
+ * @return float The converted value in grid units
+ */
+float chart_handler_voltage_to_grid_units(ChartHandler * handler, ChartHandlerChannel ch, float value);
 
 /**
  * @brief Update the chart handler values

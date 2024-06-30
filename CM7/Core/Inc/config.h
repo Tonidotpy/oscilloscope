@@ -115,6 +115,11 @@
 /** @brief Maximum number of samples of the ADC */
 #define CHART_SAMPLE_COUNT (1024U)
 
+/** @brief Height of the chart */
+#define CHART_HEIGHT (LCD_HEIGHT - HEADER_SIZE)
+
+/*** HEADER ***/
+
 /** @brief Size of the header*/
 #define HEADER_SIZE (50U)
 
