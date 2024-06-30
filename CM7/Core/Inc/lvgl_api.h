@@ -36,6 +36,8 @@ typedef struct {
     lv_obj_t * chart;
     lv_chart_series_t * series[CHART_HANDLER_CHANNEL_COUNT];
 
+    lv_obj_t * trigger_line[CHART_HANDLER_CHANNEL_COUNT];
+
     int32_t channels[CHART_HANDLER_CHANNEL_COUNT][CHART_POINT_COUNT];
     ChartHandler chart_handler;
 } LvHandler;
@@ -74,6 +76,14 @@ void lv_api_update_div_text(LvHandler * handler);
  * @param state A pointer to a touch screen state structure
  */
 void lv_api_update_ts_status(TsInfo * info);
+
+/**
+ * @brief Draw the trigger line on the screen
+ *
+ * @param handler The LVGL handler structure
+ * @param ch The channel to select
+ */
+void lv_api_draw_trigger_line(LvHandler * handler, ChartHandlerChannel ch);
 
 /**
  * @brief Run the internal logic of LVGL

@@ -14,6 +14,59 @@
 #include "config.h"
 #include "lvgl_api.h"
 
+/** @brief Delta used for the trigger threshold to be considered as rising or falling edge */
+#define CHART_HANDLER_TRIGGER_DELTA (100U)
+
+/**
+ * @brief Check if the trigger is enabled
+ *
+ * @param handler A pointer to the chart handler structure
+ *
+ * @return bool True if the trigger is enbaled, false otherwise
+ */
+inline bool _chart_handler_is_trigger_enabled(ChartHandler * handler) {
+    return handler->ascending_trigger || handler->descending_trigger;
+}
+
+/**
+ * @brief Check if a rising edge is found in the signal
+ *
+ * @param prev The previous value of the signal
+ * @param cur The current value of the signal
+ * @param trigger The treshold used to check for the rising edge
+ *
+ * @return bool True if a rising edge is found, false otherwise
+ */
+inline bool _chart_handler_is_rising_edge(uint16_t prev, uint16_t cur, uint16_t trigger) {
+    return prev <= trigger && cur > trigger;
+}
+
+/**
+ * @brief Check if a falling edge is found in the signal
+ *
+ * @param prev The previous value of the signal
+ * @param cur The current value of the signal
+ * @param trigger The treshold used to check for the falling edge
+ *
+ * @return bool True if a falling edge is found, false otherwise
+ */
+inline bool _chart_handler_is_falling_edge(uint16_t prev, uint16_t cur, uint16_t trigger) {
+    return prev >= trigger && cur < trigger;
+}
+
+/**
+ * @brief Check if the signal data is ready to be plotted
+ *
+ * @param chart_handler A pointer to the chart handler structure
+ * @param count The number of values taken after the signal crosses the trigger
+ * @param index The index of the array where the data of the signal is stored
+ */
+inline bool _chart_handler_is_data_ready(ChartHandler * handler, size_t count, size_t index) {
+    return _chart_handler_is_trigger_enabled(handler) ?
+        (count >= CHART_HANDLER_VALUES_COUNT / 2) :
+        (index >= CHART_HANDLER_VALUES_COUNT);
+}
+
 void chart_handler_init(ChartHandler * handler, void * api) {
     if (handler == NULL || api == NULL)
         return;
@@ -26,6 +79,8 @@ void chart_handler_init(ChartHandler * handler, void * api) {
 
         handler->x_scale_paused[ch] = handler->x_scale[ch] = CHART_DEFAULT_X_SCALE; // CHART_MIN_X_SCALE;
         handler->scale[ch] = CHART_DEFAULT_Y_SCALE;
+
+        handler->trigger_index[ch] = -1;
     }
 }
 
@@ -167,10 +222,9 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
         // Number of values for each sample
         const float samples_per_value = time_per_value / time_per_sample;
 
+        // TODO: Move trigger inside handler
         uint16_t trigger = ADC_VOLTAGE_TO_VALUE(1000.0f);
-        bool trigger_enabled = handler->ascending_trigger || handler->descending_trigger;
-
-        uint16_t prev_raw = raw[ch][0];
+        static uint16_t prev_raw = 0U;
 
         volatile static float off = 0.f; 
         for(size_t i = 0U; i < CHART_HANDLER_VALUES_COUNT; ++i) {
@@ -186,30 +240,33 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
             }
 
             // Copy value
-            handler->raw[ch][handler->index[ch]] = raw[ch][j];
-            ++handler->index[ch];
+            uint16_t value = raw[ch][j];
+            handler->raw[ch][handler->index[ch]] = value;
 
-            if(trigger_enabled){
-                if(!handler->found_trigger[ch]) 
-                    handler->before_trigger_cnt[ch]++;
-                else
-                    handler->after_trigger_cnt[ch]++;
+            // Trigger
+            // TODO: Add horizontal offset
+            if (_chart_handler_is_trigger_enabled(handler)) {
+                // Wait until there are enough samples before the trigger
+                if (handler->trigger_before_count[ch] < CHART_HANDLER_VALUES_COUNT / 2U)
+                    ++handler->trigger_before_count[ch];
+                else {
+                    bool asc = handler->ascending_trigger && _chart_handler_is_rising_edge(prev_raw, value, trigger);
+                    bool desc = handler->descending_trigger && _chart_handler_is_falling_edge(prev_raw, value, trigger);
 
-                if(handler->before_trigger_cnt[ch] < CHART_HANDLER_VALUES_COUNT / 2)
-                    continue;
+                    // Check if signal has crossed the trigger
+                    if (handler->trigger_index[ch] < 0 && (asc || desc))
+                        handler->trigger_index[ch] = handler->index[ch];
 
-                if(!handler->found_trigger[ch] && ((handler->ascending_trigger && (prev_raw <= trigger && raw[ch][j] > trigger)) ||
-                                    (handler->descending_trigger && (prev_raw >= trigger && raw[ch][j] < trigger)))) {
-                    handler->trigger_index[ch] = handler->index[ch];
-                    handler->found_trigger[ch] = 1;
+                    if (handler->trigger_index[ch] >= 0)
+                        ++handler->trigger_after_count[ch];
                 }
-                prev_raw = raw[ch][j];
+                prev_raw = value;
             }
+            ++handler->index[ch];
 
 
             // Check if the signal is ready to be displayed
-            if ((trigger_enabled && handler->after_trigger_cnt[ch] >= CHART_HANDLER_VALUES_COUNT / 2) 
-                || (!trigger_enabled && handler->index[ch] >= CHART_HANDLER_VALUES_COUNT)) {
+            if (_chart_handler_is_data_ready(handler, handler->trigger_after_count[ch], handler->index[ch])) {
                 // Stop the update if requested
                 if (handler->stop_request[ch]) {
                     handler->running[ch] = false;
@@ -219,9 +276,11 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
                     handler->x_scale_paused[ch] = handler->x_scale[ch];
                     handler->x_offset_paused[ch] = handler->x_offset[ch];
                 }
-                handler->after_trigger_cnt[ch] = 0;
-                handler->before_trigger_cnt[ch] = 0;
-                handler->found_trigger[ch] = 0;
+
+                handler->trigger_before_count[ch] = 0U;
+                handler->trigger_after_count[ch] = 0U;
+                prev_raw = 0U;
+                
                 off = 0.f;
                 handler->index[ch] = 0U;
                 handler->ready[ch] = true;
@@ -229,7 +288,6 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
             }
             handler->index[ch] %= CHART_HANDLER_VALUES_COUNT;
         }
-
     }
 }
 
@@ -247,21 +305,26 @@ void chart_handler_routine(ChartHandler * handler) {
         const float time_per_value = handler->x_scale[ch] / CHART_HANDLER_VALUES_PER_DIVISION;
         const float x_off = handler->x_offset[ch] - handler->x_offset_paused[ch];
         const float i_off = x_off / time_per_value;
-
+        
         for (size_t i = 0; i < CHART_HANDLER_VALUES_COUNT; ++i) {
             float val = NAN;
+            size_t index = i;
+
+            if (_chart_handler_is_trigger_enabled(handler)) {
+                const size_t trigger_offset = CHART_HANDLER_VALUES_COUNT / 2U;
+                index = i + (trigger_offset - handler->trigger_index[ch] + CHART_HANDLER_VALUES_COUNT) % CHART_HANDLER_VALUES_COUNT;
+                index %= CHART_HANDLER_VALUES_COUNT;
+            }
+
             if (!handler->running[ch]) {
+                // TODO: Fix stopped signal with trigger
+                // Do not update the values if the oscilloscope is stopped
                 volatile int j = (int)((i - i_off) * x_scale_ratio);
                 if (j >= 0 && j < CHART_HANDLER_VALUES_COUNT)
                     val = ADC_VALUE_TO_VOLTAGE(handler->raw[ch][j]);
             }
-            else{
-                if(!handler->ascending_trigger && !handler->descending_trigger)
-                    val = ADC_VALUE_TO_VOLTAGE(handler->raw[ch][i]);
-                else {
-                    size_t index = (i + handler->trigger_index[ch] + CHART_HANDLER_VALUES_COUNT / 2) % CHART_HANDLER_VALUES_COUNT;
-                    val = ADC_VALUE_TO_VOLTAGE(handler->raw[ch][index]);
-                }
+            else {
+                val = ADC_VALUE_TO_VOLTAGE(handler->raw[ch][i]);
             }
 
             // Translate
@@ -270,10 +333,14 @@ void chart_handler_routine(ChartHandler * handler) {
             // Convert to grid units
             val /= handler->scale[ch];
 
-            handler->data[ch][i] = val;
+            // Copy data
+            handler->data[ch][index] = val;
         }
 
         lv_api_update_points(handler->api, ch, handler->data[ch], CHART_HANDLER_VALUES_COUNT);
+        handler->trigger_index[ch] = -1;
+        handler->trigger_before_count[ch] = 0U;
+        handler->trigger_after_count[ch] = 0U;
         handler->ready[ch] = false;
     }
 }
@@ -283,8 +350,9 @@ void chart_handler_invalidate(ChartHandler * handler, ChartHandlerChannel ch) {
         return;
 
     // Reset data
-    handler->ready[ch] = false;
-    handler->before_trigger_cnt[ch] = 0U;
-    handler->after_trigger_cnt[ch] = 0U;
     handler->index[ch] = 0U;
+    handler->trigger_index[ch] = -1;
+    handler->trigger_before_count[ch] = 0;
+    handler->trigger_after_count[ch] = 0;
+    handler->ready[ch] = false;
 }

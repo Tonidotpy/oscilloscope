@@ -201,6 +201,13 @@ static void _lv_apply_theme(lv_theme_t * th, lv_obj_t * obj) {
         lv_style_set_pad_all(&list_main_style, 20U);
         lv_obj_add_style(obj, &list_main_style, LV_PART_MAIN);
     }
+    else if (lv_obj_check_type(obj, &lv_line_class)) {
+        static lv_style_t line_main_style;
+        lv_style_init(&line_main_style);
+        lv_style_set_line_width(&line_main_style, 2U);
+        lv_style_set_line_color(&line_main_style, LV_RED);
+        lv_obj_add_style(obj, &line_main_style, LV_PART_MAIN);
+    }
 }
 /**
  * @brief Update the status of the lvgl touch screen input device
@@ -231,14 +238,18 @@ static void menu_btn_event_handler(lv_event_t * e) {
 
 static void trigger_checkbox_handler_asc(lv_event_t * e) {
     LvHandler * handler = (LvHandler *)lv_event_get_user_data(e);
+    lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t * obj = lv_event_get_target(e);
-    handler->chart_handler.ascending_trigger = lv_obj_get_state(obj) & LV_STATE_CHECKED;
+    if (code == LV_EVENT_VALUE_CHANGED)
+        handler->chart_handler.ascending_trigger = lv_obj_get_state(obj) & LV_STATE_CHECKED;
 }
 
 static void trigger_checkbox_handler_desc(lv_event_t * e) {
     LvHandler * handler = (LvHandler *)lv_event_get_user_data(e);
+    lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t * obj = lv_event_get_target(e);
-    handler->chart_handler.descending_trigger = lv_obj_get_state(obj) & LV_STATE_CHECKED;
+    if (code == LV_EVENT_VALUE_CHANGED)
+        handler->chart_handler.descending_trigger = lv_obj_get_state(obj) & LV_STATE_CHECKED;
 }
 
 static void _lv_api_signal_generator_event_handler(lv_event_t * e) {
@@ -277,12 +288,12 @@ void _lv_api_init_trigger_tab(LvHandler * handler, lv_obj_t * tabview) {
 
     lv_obj_t * cb1 = lv_checkbox_create(trigger_tab);
     lv_checkbox_set_text(cb1, "Enable ascending trigger");
-    lv_obj_add_event_cb(cb1, trigger_checkbox_handler_desc, LV_EVENT_ALL, handler);
+    lv_obj_add_event_cb(cb1, trigger_checkbox_handler_asc, LV_EVENT_ALL, handler);
     lv_obj_update_layout(cb1);
 
     lv_obj_t * cb2 = lv_checkbox_create(trigger_tab);
     lv_checkbox_set_text(cb2, "Enable descending trigger");
-    lv_obj_add_event_cb(cb2, trigger_checkbox_handler_asc, LV_EVENT_ALL, handler);
+    lv_obj_add_event_cb(cb2, trigger_checkbox_handler_desc, LV_EVENT_ALL, handler);
     lv_obj_update_layout(cb2);
 
     // Set style which cant be set inside the theme
@@ -391,8 +402,11 @@ void _lv_api_chart_init(LvHandler * handler) {
     handler->series[CHART_HANDLER_CHANNEL_1] = lv_chart_add_series(handler->chart, LV_YELLOW, LV_CHART_AXIS_PRIMARY_Y);
     handler->series[CHART_HANDLER_CHANNEL_2] = lv_chart_add_series(handler->chart, LV_PURPLE, LV_CHART_AXIS_SECONDARY_Y);
 
-    for (size_t i = 0; i < CHART_HANDLER_CHANNEL_COUNT; ++i)
+    for (size_t i = 0; i < CHART_HANDLER_CHANNEL_COUNT; ++i) {
         lv_chart_set_ext_y_array(handler->chart, handler->series[i], handler->channels[i]);
+        // Initialize trigger lines
+        handler->trigger_line[i] = lv_line_create(handler->chart);
+    }
 }
 
 void _lv_api_chart_handler_init(LvHandler * handler) {
@@ -482,6 +496,18 @@ void lv_api_update_ts_status(TsInfo * info) {
     memcpy(&ts_info, info, sizeof(ts_info));
 }
 
+void lv_api_draw_trigger_line(LvHandler * handler, ChartHandlerChannel ch) {
+    if (handler == NULL)
+        return;
+
+    // Draw line
+    static lv_point_precise_t points[] = {
+        { LCD_WIDTH / 2U, 0 },
+        { LCD_WIDTH / 2U, LCD_HEIGHT - HEADER_SIZE }
+    };
+    lv_line_set_points(handler->trigger_line[ch], points, 2U);
+}
+
 void lv_api_run(LvHandler * handler) {
     if (handler == NULL)
         return;
@@ -528,13 +554,13 @@ void lv_api_update_points(
         CHART_AXIS_SECONDARY_Y_MAX_COORD / (float)(CHART_Y_DIVISION_COUNT)
     };
     const float dt = size / (float)CHART_POINT_COUNT;
-    const size_t step = dt == 0.f ? 1U : dt;
+    // const size_t step = dt == 0.f ? 1U : dt;
     
     size_t j = 0;
     float t = 0;
     for (size_t x = 0; x < CHART_POINT_COUNT; ++x) {
         // Interpolate
-        size_t k = j >= (CHART_HANDLER_VALUES_COUNT - 1) ? (CHART_HANDLER_VALUES_COUNT - 1) : (j + step);
+        // size_t k = j >= (CHART_HANDLER_VALUES_COUNT - 1) ? (CHART_HANDLER_VALUES_COUNT - 1) : (j + step);
         float val = values[j]; // LERP(values[j], values[k], t);
         if (val == NAN)
             val = LV_CHART_POINT_NONE;

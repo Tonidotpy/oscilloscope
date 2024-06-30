@@ -1101,6 +1101,10 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef * hadc) {
     start_channels_conversion();
 }
 
+void print(char * msg, size_t len) {
+    HAL_UART_Transmit(&huart1, (uint8_t *)msg, len, 30);
+}
+
 /* USER CODE END 4 */
 
 /**
