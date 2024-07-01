@@ -16,7 +16,7 @@
 #define LV_DARK_GRAY  ((lv_color_t)LV_COLOR_MAKE(0x4E, 0x4E, 0x4E))
 #define LV_BLACK  ((lv_color_t)LV_COLOR_MAKE(0x14, 0x14, 0x14))
 
-#define LV_RED    ((lv_color_t)LV_COLOR_MAKE(0xCB, 0x32, 0x34))
+#define LV_RED    ((lv_color_t)LV_COLOR_MAKE(0xFF, 0x31, 0x31))
 #define LV_GREEN  ((lv_color_t)LV_COLOR_MAKE(0x77, 0xDD, 0x77))
 #define LV_BLUE   ((lv_color_t)LV_COLOR_MAKE(0x22, 0x71, 0xB3))
 

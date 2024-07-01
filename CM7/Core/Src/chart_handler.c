@@ -242,6 +242,10 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
             if (j >= CHART_SAMPLE_COUNT) {
                 // Calculate offset
                 off = (samples + 1.f) - (float)CHART_SAMPLE_COUNT;
+
+                // Update loading bar
+                if (!_chart_handler_is_trigger_enabled(handler) && handler->x_scale[ch] >= CHART_LOADING_BAR_THRESHOLD)
+                    lv_api_update_loading_bar(handler->api, handler->index[CHART_HANDLER_CHANNEL_1]);
                 break;
             }
 
@@ -253,8 +257,11 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
             // TODO: Add horizontal offset
             if (_chart_handler_is_trigger_enabled(handler)) {
                 // Wait until there are enough samples before the trigger
-                if (handler->trigger_before_count[ch] < CHART_HANDLER_VALUES_COUNT / 2U)
+                if (handler->trigger_before_count[ch] < CHART_HANDLER_VALUES_COUNT / 2U) {
                     ++handler->trigger_before_count[ch];
+                    if (handler->x_scale[ch] >= CHART_LOADING_BAR_THRESHOLD)
+                        lv_api_update_loading_bar(handler->api, handler->trigger_before_count[CHART_HANDLER_CHANNEL_1]);
+                }
                 else {
                     bool asc = handler->ascending_trigger && _chart_handler_is_rising_edge(prev_raw, value, handler->trigger[ch]);
                     bool desc = handler->descending_trigger && _chart_handler_is_falling_edge(prev_raw, value, handler->trigger[ch]);
@@ -263,8 +270,15 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
                     if (handler->trigger_index[ch] < 0 && (asc || desc))
                         handler->trigger_index[ch] = handler->index[ch];
 
-                    if (handler->trigger_index[ch] >= 0)
+                    if (handler->trigger_index[ch] >= 0) {
                         ++handler->trigger_after_count[ch];
+                        if (handler->x_scale[ch] >= CHART_LOADING_BAR_THRESHOLD)
+                            lv_api_update_loading_bar(
+                                handler->api,
+                                handler->trigger_before_count[CHART_HANDLER_CHANNEL_1] +
+                                handler->trigger_after_count[CHART_HANDLER_CHANNEL_1]
+                            );
+                    }
                 }
                 prev_raw = value;
             }
@@ -273,6 +287,9 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
 
             // Check if the signal is ready to be displayed
             if (_chart_handler_is_data_ready(handler, handler->trigger_after_count[ch], handler->index[ch])) {
+                // Hide loading bar when data is ready
+                lv_api_hide_loading_bar(handler->api);
+
                 // Stop the update if requested
                 if (handler->stop_request[ch]) {
                     handler->running[ch] = false;
@@ -361,4 +378,6 @@ void chart_handler_invalidate(ChartHandler * handler, ChartHandlerChannel ch) {
     handler->trigger_before_count[ch] = 0;
     handler->trigger_after_count[ch] = 0;
     handler->ready[ch] = false;
+
+    lv_api_hide_loading_bar(handler->api);
 }

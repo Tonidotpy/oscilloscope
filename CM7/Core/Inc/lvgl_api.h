@@ -26,21 +26,30 @@ typedef struct {
     lv_display_t * display;
     lv_indev_t * touch_screen;
 
+    // Header
     lv_obj_t * header;
     lv_obj_t * div_time;
     lv_obj_t * div_volt;
     bool div_update;
 
+    // Menu
     lv_obj_t * menu;
 
+    // Chart
     lv_obj_t * chart;
     lv_chart_series_t * series[CHART_HANDLER_CHANNEL_COUNT];
 
+    // Trigger
     lv_point_precise_t trigger_points[CHART_HANDLER_CHANNEL_COUNT][2];
     lv_obj_t * trigger_line[CHART_HANDLER_CHANNEL_COUNT];
     bool trigger_update[CHART_HANDLER_CHANNEL_COUNT];
     lv_obj_t * trigger_checkbox_asc;
     lv_obj_t * trigger_checkbox_desc;
+
+    // Loading bar
+    lv_obj_t * loading_bar;
+    size_t loading_bar_value;
+    bool loading_bar_hide;
 
     int32_t channels[CHART_HANDLER_CHANNEL_COUNT][CHART_POINT_COUNT];
     ChartHandler chart_handler;
@@ -116,6 +125,21 @@ void lv_api_hide_trigger_line(LvHandler * handler, ChartHandlerChannel ch);
  * @param volt The height of the trigger (in millivolt)
  */
 void lv_api_update_trigger_line(LvHandler * handler, ChartHandlerChannel ch, float volt);
+
+/**
+ * @brief Hide the loading bar
+ *
+ * @param handler A pointer to the LVGL handler structure
+ */
+void lv_api_hide_loading_bar(LvHandler * handler);
+
+/**
+ * @brief Update the loading bar value
+ *
+ * @param handler A pointer to the LVGL handler structure
+ * @param value The new value to set
+ */
+void lv_api_update_loading_bar(LvHandler * handler, size_t value);
 
 /**
  * @brief Run the internal logic of LVGL

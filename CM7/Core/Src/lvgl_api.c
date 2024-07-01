@@ -208,6 +208,17 @@ static void _lv_apply_theme(lv_theme_t * th, lv_obj_t * obj) {
         lv_style_set_line_color(&line_main_style, LV_RED);
         lv_obj_add_style(obj, &line_main_style, LV_PART_MAIN);
     }
+    else if (lv_obj_check_type(obj, &lv_bar_class)) { 
+        static lv_style_t bar_main_style;
+        lv_style_init(&bar_main_style);
+        lv_style_set_bg_color(&bar_main_style, LV_LIGHT_GRAY);
+        lv_obj_add_style(obj, &bar_main_style, LV_PART_MAIN);
+
+        static lv_style_t bar_indicator_style;
+        lv_style_init(&bar_indicator_style);
+        lv_style_set_bg_color(&bar_indicator_style, LV_RED);
+        lv_obj_add_style(obj, &bar_indicator_style, LV_PART_INDICATOR);
+    }
 }
 /**
  * @brief Update the status of the lvgl touch screen input device
@@ -448,6 +459,16 @@ void _lv_api_chart_handler_init(LvHandler * handler) {
     chart_handler_init(&handler->chart_handler, handler);
 }
 
+void _lv_api_bar_init(LvHandler * handler) {
+    handler->loading_bar = lv_bar_create(handler->chart);
+    lv_obj_set_size(handler->loading_bar, LCD_WIDTH, 5);
+    lv_obj_add_flag(handler->loading_bar, LV_OBJ_FLAG_FLOATING);
+    lv_obj_add_flag(handler->loading_bar, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_align(handler->loading_bar, LV_ALIGN_TOP_RIGHT, 0, 0);
+
+    lv_bar_set_range(handler->loading_bar, 0, CHART_HANDLER_VALUES_COUNT);
+}
+
 void _lv_api_div_set_text(lv_obj_t * label, const char * fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -517,6 +538,7 @@ void lv_api_init(
     _lv_api_chart_handler_init(handler);
     _lv_api_header_init(handler);
     _lv_api_menu_init(handler);
+    _lv_api_bar_init(handler);
 }
 
 float lv_api_grid_units_to_chart(ChartHandlerChannel ch, float value) {
@@ -569,6 +591,19 @@ void lv_api_hide_trigger_line(LvHandler * handler, ChartHandlerChannel ch) {
     lv_obj_add_flag(handler->trigger_line[ch], LV_OBJ_FLAG_HIDDEN);
 }
 
+void lv_api_hide_loading_bar(LvHandler * handler) {
+    if (handler == NULL)
+        return;
+    handler->loading_bar_hide = true;
+    handler->loading_bar_value = 0;
+}
+
+void lv_api_update_loading_bar(LvHandler * handler, size_t value) {
+    if (handler == NULL)
+        return;
+    handler->loading_bar_value = value;
+}
+
 void lv_api_run(LvHandler * handler) {
     if (handler == NULL)
         return;
@@ -609,6 +644,20 @@ void lv_api_run(LvHandler * handler) {
 
             handler->trigger_update[ch] = false;
         }
+    }
+
+    // Update loading bar
+    if (handler->loading_bar_hide) {
+        lv_obj_add_flag(handler->loading_bar, LV_OBJ_FLAG_HIDDEN);
+        lv_bar_set_value(handler->loading_bar, 0, false);
+
+        handler->loading_bar_hide = false;
+    }
+    else if (handler->loading_bar_value > 0) {
+        lv_obj_clear_flag(handler->loading_bar, LV_OBJ_FLAG_HIDDEN);
+        lv_bar_set_value(handler->loading_bar, handler->loading_bar_value, false);
+
+        handler->loading_bar_value = 0;
     }
 
     lv_timer_handler_run_in_period(5);
