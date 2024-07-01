@@ -148,6 +148,15 @@ void chart_handler_set_running(ChartHandler * handler, ChartHandlerChannel ch, b
 void chart_handler_toggle_running(ChartHandler * handler, ChartHandlerChannel ch);
 
 /**
+ * @brief Check if the trigger is enabled
+ *
+ * @param handler A pointer to the chart handler structure
+ *
+ * @return bool True if the trigger is enbaled, false otherwise
+ */
+bool chart_handler_is_trigger_enabled(ChartHandler * handler);
+
+/**
  * @brief Get the current offset of a single channel
  *
  * @param handler A pointer to the chart handler structure

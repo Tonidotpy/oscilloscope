@@ -119,7 +119,7 @@
 #define CHART_HEIGHT (LCD_HEIGHT - HEADER_SIZE)
 
 /** @brief Threshold used to show the bar only if the time scale is big enough */ 
-#define CHART_LOADING_BAR_THRESHOLD (100000.f)
+#define CHART_LOADING_BAR_THRESHOLD (50000.f)
 
 /*** HEADER ***/
 

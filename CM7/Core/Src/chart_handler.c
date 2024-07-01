@@ -18,17 +18,6 @@
 #define CHART_HANDLER_TRIGGER_DELTA (100U)
 
 /**
- * @brief Check if the trigger is enabled
- *
- * @param handler A pointer to the chart handler structure
- *
- * @return bool True if the trigger is enbaled, false otherwise
- */
-inline bool _chart_handler_is_trigger_enabled(ChartHandler * handler) {
-    return handler->ascending_trigger || handler->descending_trigger;
-}
-
-/**
  * @brief Check if a rising edge is found in the signal
  *
  * @param prev The previous value of the signal
@@ -62,7 +51,7 @@ inline bool _chart_handler_is_falling_edge(uint16_t prev, uint16_t cur, uint16_t
  * @param index The index of the array where the data of the signal is stored
  */
 inline bool _chart_handler_is_data_ready(ChartHandler * handler, size_t count, size_t index) {
-    return _chart_handler_is_trigger_enabled(handler) ?
+    return chart_handler_is_trigger_enabled(handler) ?
         (count >= CHART_HANDLER_VALUES_COUNT / 2) :
         (index >= CHART_HANDLER_VALUES_COUNT);
 }
@@ -133,6 +122,17 @@ void chart_handler_toggle_running(ChartHandler * handler, ChartHandlerChannel ch
     chart_handler_set_running(handler, ch, !handler->running[ch]);
 }
 
+/**
+ * @brief Check if the trigger is enabled
+ *
+ * @param handler A pointer to the chart handler structure
+ *
+ * @return bool True if the trigger is enbaled, false otherwise
+ */
+bool chart_handler_is_trigger_enabled(ChartHandler * handler) {
+    return handler->ascending_trigger || handler->descending_trigger;
+}
+
 float chart_handler_get_offset(ChartHandler * handler, ChartHandlerChannel ch) {
     if (handler == NULL)
         return 0;
@@ -165,7 +165,8 @@ void chart_handler_set_scale(ChartHandler * handler, ChartHandlerChannel ch, flo
 
     // Notify LVGL
     lv_api_update_div_text(handler->api);
-    lv_api_update_trigger_line(handler->api, CHART_HANDLER_CHANNEL_1, 1000.f);
+    if (chart_handler_is_trigger_enabled(handler))
+        lv_api_update_trigger_line(handler->api, CHART_HANDLER_CHANNEL_1, 1000.f);
 }
 
 float chart_handler_get_x_scale(ChartHandler * handler, ChartHandlerChannel ch) {
@@ -244,7 +245,7 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
                 off = (samples + 1.f) - (float)CHART_SAMPLE_COUNT;
 
                 // Update loading bar
-                if (!_chart_handler_is_trigger_enabled(handler) && handler->x_scale[ch] >= CHART_LOADING_BAR_THRESHOLD)
+                if (!chart_handler_is_trigger_enabled(handler) && handler->x_scale[ch] >= CHART_LOADING_BAR_THRESHOLD)
                     lv_api_update_loading_bar(handler->api, handler->index[CHART_HANDLER_CHANNEL_1]);
                 break;
             }
@@ -255,7 +256,7 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
 
             // Trigger
             // TODO: Add horizontal offset
-            if (_chart_handler_is_trigger_enabled(handler)) {
+            if (chart_handler_is_trigger_enabled(handler)) {
                 // Wait until there are enough samples before the trigger
                 if (handler->trigger_before_count[ch] < CHART_HANDLER_VALUES_COUNT / 2U) {
                     ++handler->trigger_before_count[ch];
@@ -333,7 +334,7 @@ void chart_handler_routine(ChartHandler * handler) {
             float val = NAN;
             size_t index = i;
 
-            if (_chart_handler_is_trigger_enabled(handler)) {
+            if (chart_handler_is_trigger_enabled(handler)) {
                 const size_t trigger_offset = CHART_HANDLER_VALUES_COUNT / 2U;
                 index = i + (trigger_offset - handler->trigger_index[ch] + CHART_HANDLER_VALUES_COUNT) % CHART_HANDLER_VALUES_COUNT;
                 index %= CHART_HANDLER_VALUES_COUNT;
