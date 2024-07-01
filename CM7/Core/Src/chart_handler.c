@@ -165,6 +165,7 @@ void chart_handler_set_scale(ChartHandler * handler, ChartHandlerChannel ch, flo
 
     // Notify LVGL
     lv_api_update_div_text(handler->api);
+    lv_api_update_trigger_line(handler->api, CHART_HANDLER_CHANNEL_1, 1000.f);
 }
 
 float chart_handler_get_x_scale(ChartHandler * handler, ChartHandlerChannel ch) {

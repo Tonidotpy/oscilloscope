@@ -36,7 +36,11 @@ typedef struct {
     lv_obj_t * chart;
     lv_chart_series_t * series[CHART_HANDLER_CHANNEL_COUNT];
 
+    lv_point_precise_t trigger_points[CHART_HANDLER_CHANNEL_COUNT][2];
     lv_obj_t * trigger_line[CHART_HANDLER_CHANNEL_COUNT];
+    bool trigger_update[CHART_HANDLER_CHANNEL_COUNT];
+    lv_obj_t * trigger_checkbox_asc;
+    lv_obj_t * trigger_checkbox_desc;
 
     int32_t channels[CHART_HANDLER_CHANNEL_COUNT][CHART_POINT_COUNT];
     ChartHandler chart_handler;
@@ -63,10 +67,22 @@ void lv_api_init(
 );
 
 /**
+ * @brief Convert a value in grid units to chart space
+ *
+ * @details The chart space coordinate is a number from 0 to the height of the chart
+ *
+ * @param ch The selected channel
+ * @param value The value in grid units to convert 
+ *
+ * @return float The converted value in chart space
+ */
+float lv_api_grid_units_to_chart(ChartHandlerChannel ch, float value);
+
+/**
  * @brief Convert a value in grid units to screen space
  *
  * @param ch The selected channel
- * @param value The value to convert in grid units
+ * @param value The value in grid units to convert
  *
  * @return float The converted value in screen space
  */
@@ -97,9 +113,9 @@ void lv_api_hide_trigger_line(LvHandler * handler, ChartHandlerChannel ch);
  *
  * @param handler The LVGL handler structure
  * @param ch The channel to select
- * @param height The height of the trigger (in screen coordinates)
+ * @param volt The height of the trigger (in millivolt)
  */
-void lv_api_update_trigger_line(LvHandler * handler, ChartHandlerChannel ch, int32_t height);
+void lv_api_update_trigger_line(LvHandler * handler, ChartHandlerChannel ch, float volt);
 
 /**
  * @brief Run the internal logic of LVGL

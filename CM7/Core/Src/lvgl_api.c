@@ -228,7 +228,8 @@ static void _lv_update_ts_indev_callback(lv_indev_t * touch_screen, lv_indev_dat
     data->state = ts_info.detected ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
     ts_get_info(&ts_info);
 }
-static void menu_btn_event_handler(lv_event_t * e) {
+
+static void _lv_api_menu_btn_event_handler(lv_event_t * e) {
     LvHandler * handler = (LvHandler *)lv_event_get_user_data(e);
     if(lv_obj_has_flag(handler->menu, LV_OBJ_FLAG_HIDDEN))
         lv_obj_clear_flag(handler->menu, LV_OBJ_FLAG_HIDDEN);
@@ -236,7 +237,7 @@ static void menu_btn_event_handler(lv_event_t * e) {
         lv_obj_add_flag(handler->menu, LV_OBJ_FLAG_HIDDEN);
 }
 
-static void trigger_checkbox_handler_asc(lv_event_t * e) {
+static void _lv_api_trigger_checkbox_handler_asc(lv_event_t * e) {
     LvHandler * handler = (LvHandler *)lv_event_get_user_data(e);
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t * obj = lv_event_get_target(e);
@@ -244,19 +245,21 @@ static void trigger_checkbox_handler_asc(lv_event_t * e) {
         bool checked = lv_obj_get_state(obj) & LV_STATE_CHECKED;
         handler->chart_handler.ascending_trigger = checked;
 
-        for (size_t ch = 0; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
-            if (!checked && !handler->chart_handler.descending_trigger)
-                lv_api_hide_trigger_line(handler, ch);
-            else {
-                float val = chart_handler_voltage_to_grid_units(&handler->chart_handler, ch, 1000.f);
-                val = lv_api_grid_units_to_screen(ch, val);
-                lv_api_update_trigger_line(handler, ch, val);
-            }
+        // TODO: Manage second channel
+        ChartHandlerChannel ch = CHART_HANDLER_CHANNEL_1;
+        if (!checked && !handler->chart_handler.descending_trigger)
+            lv_api_hide_trigger_line(handler, ch);
+        else {
+            // Uncheck other button
+            lv_obj_remove_state(handler->trigger_checkbox_desc, LV_STATE_CHECKED);
+            handler->chart_handler.descending_trigger = false;
+
+            lv_api_update_trigger_line(handler, ch, ADC_VALUE_TO_VOLTAGE(handler->chart_handler.trigger[ch]));
         }
     }
 }
 
-static void trigger_checkbox_handler_desc(lv_event_t * e) {
+static void _lv_api_trigger_checkbox_handler_desc(lv_event_t * e) {
     LvHandler * handler = (LvHandler *)lv_event_get_user_data(e);
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t * obj = lv_event_get_target(e);
@@ -264,14 +267,16 @@ static void trigger_checkbox_handler_desc(lv_event_t * e) {
         bool checked = lv_obj_get_state(obj) & LV_STATE_CHECKED;
         handler->chart_handler.descending_trigger = checked;
 
-        for (size_t ch = 0; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
-            if (!checked && !handler->chart_handler.ascending_trigger)
-                lv_api_hide_trigger_line(handler, ch);
-            else {
-                float val = chart_handler_voltage_to_grid_units(&handler->chart_handler, ch, 1000.f);
-                val = lv_api_grid_units_to_screen(ch, val);
-                lv_api_update_trigger_line(handler, ch, val);
-            }
+        // TODO: Manage second channel
+        ChartHandlerChannel ch = CHART_HANDLER_CHANNEL_1;
+        if (!checked && !handler->chart_handler.ascending_trigger)
+            lv_api_hide_trigger_line(handler, ch);
+        else {
+            // Uncheck other button
+            lv_obj_remove_state(handler->trigger_checkbox_asc, LV_STATE_CHECKED);
+            handler->chart_handler.ascending_trigger = false;
+
+            lv_api_update_trigger_line(handler, ch, ADC_VALUE_TO_VOLTAGE(handler->chart_handler.trigger[ch]));
         }
     }
 }
@@ -310,15 +315,15 @@ void _lv_api_init_trigger_tab(LvHandler * handler, lv_obj_t * tabview) {
     lv_obj_set_flex_flow(trigger_tab, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(trigger_tab, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
 
-    lv_obj_t * cb1 = lv_checkbox_create(trigger_tab);
-    lv_checkbox_set_text(cb1, "Enable ascending trigger");
-    lv_obj_add_event_cb(cb1, trigger_checkbox_handler_asc, LV_EVENT_ALL, handler);
-    lv_obj_update_layout(cb1);
+    handler->trigger_checkbox_asc = lv_checkbox_create(trigger_tab);
+    lv_checkbox_set_text(handler->trigger_checkbox_asc, "Enable ascending trigger");
+    lv_obj_add_event_cb(handler->trigger_checkbox_asc, _lv_api_trigger_checkbox_handler_asc, LV_EVENT_ALL, handler);
+    lv_obj_update_layout(handler->trigger_checkbox_asc);
 
-    lv_obj_t * cb2 = lv_checkbox_create(trigger_tab);
-    lv_checkbox_set_text(cb2, "Enable descending trigger");
-    lv_obj_add_event_cb(cb2, trigger_checkbox_handler_desc, LV_EVENT_ALL, handler);
-    lv_obj_update_layout(cb2);
+    handler->trigger_checkbox_desc = lv_checkbox_create(trigger_tab);
+    lv_checkbox_set_text(handler->trigger_checkbox_desc, "Enable descending trigger");
+    lv_obj_add_event_cb(handler->trigger_checkbox_desc, _lv_api_trigger_checkbox_handler_desc, LV_EVENT_ALL, handler);
+    lv_obj_update_layout(handler->trigger_checkbox_desc);
 
     // Set style which cant be set inside the theme
     lv_obj_set_style_bg_color(trigger_tab, LV_BLACK, LV_PART_MAIN);
@@ -388,7 +393,7 @@ void _lv_api_header_init(LvHandler * handler) {
     lv_obj_align(btn, LV_ALIGN_CENTER, 0, 0);
 
     // Set button event
-    lv_obj_add_event_cb(btn, menu_btn_event_handler, LV_EVENT_CLICKED, handler);
+    lv_obj_add_event_cb(btn, _lv_api_menu_btn_event_handler, LV_EVENT_CLICKED, handler);
     
     // Add label to button
     lv_obj_t * btn_label = lv_label_create(btn);
@@ -426,10 +431,16 @@ void _lv_api_chart_init(LvHandler * handler) {
     handler->series[CHART_HANDLER_CHANNEL_1] = lv_chart_add_series(handler->chart, LV_YELLOW, LV_CHART_AXIS_PRIMARY_Y);
     handler->series[CHART_HANDLER_CHANNEL_2] = lv_chart_add_series(handler->chart, LV_PURPLE, LV_CHART_AXIS_SECONDARY_Y);
 
-    for (size_t i = 0; i < CHART_HANDLER_CHANNEL_COUNT; ++i) {
-        lv_chart_set_ext_y_array(handler->chart, handler->series[i], handler->channels[i]);
+    for (size_t ch = 0; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
+        lv_chart_set_ext_y_array(handler->chart, handler->series[ch], handler->channels[ch]);
+
         // Initialize trigger lines
-        handler->trigger_line[i] = lv_line_create(handler->chart);
+        handler->trigger_line[ch] = lv_line_create(handler->chart);
+        handler->trigger_points[ch][1].x = LCD_WIDTH;
+
+        // Set trigger points and hide line
+        lv_line_set_points(handler->trigger_line[ch], handler->trigger_points[ch], 2U);
+        lv_api_hide_trigger_line(handler, ch);
     }
 }
 
@@ -508,12 +519,17 @@ void lv_api_init(
     _lv_api_menu_init(handler);
 }
 
-float lv_api_grid_units_to_screen(ChartHandlerChannel ch, float value) {
+float lv_api_grid_units_to_chart(ChartHandlerChannel ch, float value) {
     const float div[CHART_HANDLER_CHANNEL_COUNT] = {
         CHART_AXIS_PRIMARY_Y_MAX_COORD / (float)(CHART_Y_DIVISION_COUNT),
         CHART_AXIS_SECONDARY_Y_MAX_COORD / (float)(CHART_Y_DIVISION_COUNT)
     };
     return value * div[ch];
+}
+
+float lv_api_grid_units_to_screen(ChartHandlerChannel ch, float value) {
+    const float div = CHART_HEIGHT / (float)(CHART_Y_DIVISION_COUNT);
+    return value * div;
 }
 
 void lv_api_update_div_text(LvHandler * handler) {
@@ -528,30 +544,23 @@ void lv_api_update_ts_status(TsInfo * info) {
     memcpy(&ts_info, info, sizeof(ts_info));
 }
 
-void lv_api_update_trigger_line(LvHandler * handler, ChartHandlerChannel ch, int32_t height) {
+void lv_api_update_trigger_line(LvHandler * handler, ChartHandlerChannel ch, float volt) {
     if (handler == NULL)
         return;
 
-    static lv_point_precise_t points[] = {
-        { 0, 0 },
-        { LCD_WIDTH, 0 }
-    };
+    // Convert voltage to screen space
+    float height = chart_handler_voltage_to_grid_units(&handler->chart_handler, ch, volt);
+    height = lv_api_grid_units_to_screen(ch, height);
 
-    // Do not draw the line if outside the screen bounds
-    if (height < 0 || height >= CHART_HEIGHT) {
-        lv_obj_add_flag(handler->trigger_line[ch], LV_OBJ_FLAG_HIDDEN);
-        return;
-    }
-
-    // Update line position
-    lv_obj_clear_flag(handler->trigger_line[ch], LV_OBJ_FLAG_HIDDEN);
     // Reverse height because 0 start from the top
-    // BUG: 8 is added to compensate for the error
-    height = CHART_HEIGHT - (height - 8);
-    points[0].y = points[1].y = height;
+    // BUG: A correction factor is added to compensate for the error
+    const float error = 6.f * (handler->chart_handler.scale[ch] / 1000.f);
+    // height = CHART_HEIGHT - (height - error);
+    height = CHART_HEIGHT - height;
 
-    // Draw line
-    lv_line_set_points(handler->trigger_line[ch], points, 2U);
+    // Update points
+    handler->trigger_points[ch][0].y = handler->trigger_points[ch][1].y = height;
+    handler->trigger_update[ch] = true;
 }
 
 void lv_api_hide_trigger_line(LvHandler * handler, ChartHandlerChannel ch) {
@@ -580,6 +589,26 @@ void lv_api_run(LvHandler * handler) {
         );
 
         handler->div_update = false;
+    }
+
+    // Update trigger line
+    for (ChartHandlerChannel ch = CHART_HANDLER_CHANNEL_1; ch < CHART_HANDLER_CHANNEL_COUNT; ++ch) {
+        if (handler->trigger_update[ch]) {
+            /*
+             * The line is hidden if it goes outside of the screen bound
+             * The trigger line is always horizontal so only one value can
+             * be checked to decide if the line should be hidden or not
+             */
+            if (handler->trigger_points[ch][0].y < 0 || handler->trigger_points[ch][0].y >= CHART_HEIGHT)
+                lv_obj_add_flag(handler->trigger_line[ch], LV_OBJ_FLAG_HIDDEN);
+            else {
+                // Show line and update position
+                lv_obj_clear_flag(handler->trigger_line[ch], LV_OBJ_FLAG_HIDDEN);
+                lv_line_set_points(handler->trigger_line[ch], handler->trigger_points[ch], 2U);
+            }
+
+            handler->trigger_update[ch] = false;
+        }
     }
 
     lv_timer_handler_run_in_period(5);
@@ -614,7 +643,7 @@ void lv_api_update_points(
             val = LV_CHART_POINT_NONE;
         else {
             // Convert to screen space
-            val = lv_api_grid_units_to_screen(ch, val);
+            val = lv_api_grid_units_to_chart(ch, val);
         }
 
         // Copy value
