@@ -334,9 +334,10 @@ void chart_handler_routine(ChartHandler * handler) {
             float val = NAN;
             size_t index = i;
 
+            // Shift index based on trigger if enabled
             if (chart_handler_is_trigger_enabled(handler)) {
                 const size_t trigger_offset = CHART_HANDLER_VALUES_COUNT / 2U;
-                index = i + (trigger_offset - handler->trigger_index[ch] + CHART_HANDLER_VALUES_COUNT) % CHART_HANDLER_VALUES_COUNT;
+                index += (trigger_offset - handler->trigger_index[ch] + CHART_HANDLER_VALUES_COUNT) % CHART_HANDLER_VALUES_COUNT;
                 index %= CHART_HANDLER_VALUES_COUNT;
             }
 
@@ -347,9 +348,8 @@ void chart_handler_routine(ChartHandler * handler) {
                 if (j >= 0 && j < CHART_HANDLER_VALUES_COUNT)
                     val = ADC_VALUE_TO_VOLTAGE(handler->raw[ch][j]);
             }
-            else {
+            else
                 val = ADC_VALUE_TO_VOLTAGE(handler->raw[ch][i]);
-            }
 
             // Translate
             val += handler->offset[ch];
@@ -362,7 +362,8 @@ void chart_handler_routine(ChartHandler * handler) {
         }
 
         lv_api_update_points(handler->api, ch, handler->data[ch], CHART_HANDLER_VALUES_COUNT);
-        handler->trigger_index[ch] = -1;
+        if (handler->running[ch])
+            handler->trigger_index[ch] = -1;
         handler->trigger_before_count[ch] = 0U;
         handler->trigger_after_count[ch] = 0U;
         handler->ready[ch] = false;

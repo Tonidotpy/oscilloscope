@@ -1028,6 +1028,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
 
             sprintf(msg, "Running: %s\r\n", chart_handler_is_running(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1) ? "true" : "false");
             HAL_UART_Transmit(&huart1, (uint8_t *)msg, strlen(msg), 30);
+
+            HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, chart_handler_is_running(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1));
         }
     }
     else if (pin == TOUCH_INTERRUPT_Pin) {

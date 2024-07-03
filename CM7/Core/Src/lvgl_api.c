@@ -612,15 +612,39 @@ void lv_api_run(LvHandler * handler) {
 
     // Update LVGL internal status
     if (handler->div_update) {
+        float time = chart_handler_get_x_scale(&handler->chart_handler, CHART_HANDLER_CHANNEL_1);
+        float volt = chart_handler_get_scale(&handler->chart_handler, CHART_HANDLER_CHANNEL_1);
+
+        // Unit of measurements
+        const char * time_units[] = { "us", "ms" };
+        const char * volt_units[] = { "mV", " V" };
+
+        // String formats
+        const char * time_fmt[] = { "%.0f %s", "%.2f %s" };
+        const char * volt_fmt[] = { "%.0f %s", "%.2f %s" };
+
+        // Select index for the units and format
+        size_t time_id = 0, volt_id = 0;
+        if (time >= 1000.f) {
+            time *= 0.001f;
+            time_id = 1;
+        }
+        if (volt >= 1000.f) {
+            volt *= 0.001f;
+            volt_id = 1;
+        }
+    
         _lv_api_div_set_text(
             handler->div_time,
-            "%.0f us",
-            chart_handler_get_x_scale(&handler->chart_handler, CHART_HANDLER_CHANNEL_1)
+            time_fmt[time_id],
+            time,
+            time_units[time_id]
         );
         _lv_api_div_set_text(
             handler->div_volt,
-            "%.0f mV",
-            chart_handler_get_scale(&handler->chart_handler, CHART_HANDLER_CHANNEL_1)
+            volt_fmt[volt_id],
+            volt,
+            volt_units[volt_id]
         );
 
         handler->div_update = false;

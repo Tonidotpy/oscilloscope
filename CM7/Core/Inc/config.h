@@ -103,7 +103,7 @@
 #define CHART_POINT_COUNT ((CHART_X_DIVISION_COUNT) * 100U)
 
 /** @brief Minimum and maximum values per division for the X value of the chart in us */
-#define CHART_MIN_X_SCALE (10.0f) // in us
+#define CHART_MIN_X_SCALE (100.0f) // in us
 #define CHART_MAX_X_SCALE (300000.0f) // in us
 #define CHART_DEFAULT_X_SCALE (10000.0f) // in mV
 
