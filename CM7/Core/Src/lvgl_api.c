@@ -690,7 +690,6 @@ void lv_api_clear_channel_data(LvHandler * handler, ChartHandlerChannel ch) {
     memset(handler->channels[ch], LV_CHART_POINT_NONE, CHART_POINT_COUNT * sizeof(int32_t));
 }
 
-// TODO: Check
 void lv_api_update_points(
     LvHandler * handler,
     ChartHandlerChannel ch,

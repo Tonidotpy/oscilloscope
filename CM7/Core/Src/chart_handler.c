@@ -351,20 +351,20 @@ void chart_handler_routine(ChartHandler * handler) {
         const float time_per_value = handler->x_scale[ch] / CHART_HANDLER_VALUES_PER_DIVISION;
         const float x_off = handler->x_offset[ch] - handler->x_offset_paused[ch];
         const float i_off = x_off / time_per_value;
+
+        // Shift index based on trigger if enabled
+        size_t index = 0;
+        if (chart_handler_is_trigger_enabled(handler)) {
+            const size_t trigger_offset = CHART_HANDLER_VALUES_COUNT / 2U;
+            index = (trigger_offset - handler->trigger_index[ch] + CHART_HANDLER_VALUES_COUNT) % CHART_HANDLER_VALUES_COUNT;
+        }
         
         for (size_t i = 0; i < CHART_HANDLER_VALUES_COUNT; ++i) {
             float val = NAN;
-            size_t index = i;
-
-            // Shift index based on trigger if enabled
-            if (chart_handler_is_trigger_enabled(handler)) {
-                const size_t trigger_offset = CHART_HANDLER_VALUES_COUNT / 2U;
-                index += (trigger_offset - handler->trigger_index[ch] + CHART_HANDLER_VALUES_COUNT) % CHART_HANDLER_VALUES_COUNT;
-                index %= CHART_HANDLER_VALUES_COUNT;
-            }
 
             if (!handler->running[ch]) {
-                // TODO: Fix stopped signal with trigger
+                // TODO: Fix change time scale when stopped
+                // TODO: Fix remove trigger when stopped
                 // Do not update the values if the oscilloscope is stopped
                 volatile int j = (int)((i - i_off) * x_scale_ratio);
                 if (j >= 0 && j < CHART_HANDLER_VALUES_COUNT)
@@ -381,6 +381,10 @@ void chart_handler_routine(ChartHandler * handler) {
 
             // Copy data
             handler->data[ch][index] = val;
+            
+            // Update index
+            ++index;
+            index %= CHART_HANDLER_VALUES_COUNT;
         }
 
         lv_api_update_points(handler->api, ch, handler->data[ch], CHART_HANDLER_VALUES_COUNT);
@@ -398,7 +402,8 @@ void chart_handler_invalidate(ChartHandler * handler, ChartHandlerChannel ch) {
 
     // Reset data
     handler->index[ch] = 0U;
-    handler->trigger_index[ch] = -1;
+    if (handler->running[ch])
+        handler->trigger_index[ch] = -1;
     handler->trigger_before_count[ch] = 0;
     handler->trigger_after_count[ch] = 0;
     handler->ready[ch] = false;
