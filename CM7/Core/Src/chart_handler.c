@@ -94,6 +94,23 @@ void chart_handler_toggle_enable(ChartHandler * handler, ChartHandlerChannel ch)
     chart_handler_set_enable(handler, ch, !handler->enabled[ch]);
 }
 
+uint16_t chart_handler_get_trigger(ChartHandler * handler, ChartHandlerChannel ch) {
+    if (handler == NULL)
+        return 0U;
+    return handler->trigger[ch];
+}
+
+void chart_handler_set_trigger(
+    ChartHandler * handler,
+    ChartHandlerChannel ch,
+    uint16_t value)
+{
+    if (handler == NULL || !chart_handler_is_trigger_enabled(handler))
+        return;
+    handler->trigger[ch] = value;
+    lv_api_update_trigger_line(handler->api, ch, ADC_VALUE_TO_VOLTAGE(value));
+}
+
 bool chart_handler_is_running(ChartHandler * handler, ChartHandlerChannel ch) {
     if (handler == NULL)
         return false;
@@ -165,8 +182,13 @@ void chart_handler_set_scale(ChartHandler * handler, ChartHandlerChannel ch, flo
 
     // Notify LVGL
     lv_api_update_div_text(handler->api);
-    if (chart_handler_is_trigger_enabled(handler))
-        lv_api_update_trigger_line(handler->api, CHART_HANDLER_CHANNEL_1, 1000.f);
+    if (chart_handler_is_trigger_enabled(handler)) {
+        lv_api_update_trigger_line(
+            handler->api,
+            CHART_HANDLER_CHANNEL_1,
+            ADC_VALUE_TO_VOLTAGE(handler->trigger[ch])
+        );
+    }
 }
 
 float chart_handler_get_x_scale(ChartHandler * handler, ChartHandlerChannel ch) {

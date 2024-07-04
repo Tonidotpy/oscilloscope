@@ -575,9 +575,6 @@ void lv_api_update_trigger_line(LvHandler * handler, ChartHandlerChannel ch, flo
     height = lv_api_grid_units_to_screen(ch, height);
 
     // Reverse height because 0 start from the top
-    // BUG: A correction factor is added to compensate for the error
-    const float error = 6.f * (handler->chart_handler.scale[ch] / 1000.f);
-    // height = CHART_HEIGHT - (height - error);
     height = CHART_HEIGHT - height;
 
     // Update points

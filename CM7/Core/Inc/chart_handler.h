@@ -121,6 +121,27 @@ void chart_handler_set_enable(ChartHandler * handler, ChartHandlerChannel ch, bo
 void chart_handler_toggle_enable(ChartHandler * handler, ChartHandlerChannel ch);
 
 /**
+ * @brief Get the trigger value of a single channel
+ *
+ * @param handler A pointer to the chart handler structure
+ * @param ch The channel to get the trigger from
+ */
+uint16_t chart_handler_get_trigger(ChartHandler * handler, ChartHandlerChannel ch);
+
+/**
+ * @brief Set the trigger value of a single channel
+ *
+ * @param handler A pointer to the chart handler
+ * @param ch The channel to select
+ * @param value The new value of the trigger
+ */
+void chart_handler_set_trigger(
+    ChartHandler * handler,
+    ChartHandlerChannel ch,
+    uint16_t value
+);
+
+/**
  * @brief Check if the chart handler channel plot is updating
  *
  * @param handler A pointer to the chart handler structure
