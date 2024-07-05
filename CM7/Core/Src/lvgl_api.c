@@ -588,6 +588,20 @@ void lv_api_hide_trigger_line(LvHandler * handler, ChartHandlerChannel ch) {
     lv_obj_add_flag(handler->trigger_line[ch], LV_OBJ_FLAG_HIDDEN);
 }
 
+void lv_api_enable_trigger_checkbox(LvHandler * handler) {
+    if (handler == NULL)
+        return;
+    lv_obj_clear_state(handler->trigger_checkbox_asc, LV_STATE_DISABLED);
+    lv_obj_clear_state(handler->trigger_checkbox_desc, LV_STATE_DISABLED);
+}
+
+void lv_api_disable_trigger_checkbox(LvHandler * handler) {
+    if (handler == NULL)
+        return;
+    lv_obj_add_state(handler->trigger_checkbox_asc, LV_STATE_DISABLED);
+    lv_obj_add_state(handler->trigger_checkbox_desc, LV_STATE_DISABLED);
+}
+
 void lv_api_hide_loading_bar(LvHandler * handler) {
     if (handler == NULL)
         return;

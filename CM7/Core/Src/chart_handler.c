@@ -127,11 +127,15 @@ void chart_handler_set_running(ChartHandler * handler, ChartHandlerChannel ch, b
     if (running) {
         handler->running[ch] = true;
         chart_handler_invalidate(handler, ch);
+
+        lv_api_enable_trigger_checkbox(handler->api);
     }
     else {
         // Save current X offset and scale
         handler->x_offset_paused[ch] = handler->x_offset[ch];
         handler->x_scale_paused[ch] = handler->x_scale[ch];
+
+        lv_api_disable_trigger_checkbox(handler->api);
     }
 }
 

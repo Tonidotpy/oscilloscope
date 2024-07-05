@@ -116,6 +116,20 @@ void lv_api_update_ts_status(TsInfo * info);
 void lv_api_hide_trigger_line(LvHandler * handler, ChartHandlerChannel ch);
 
 /**
+ * @brief Enable the trigger checkboxes
+ *
+ * @param handler A pointer to the LVGL handler structure
+ */
+void lv_api_enable_trigger_checkbox(LvHandler * handler);
+
+/**
+ * @brief Disable the trigger checkboxes
+ *
+ * @param handler A pointer to the LVGL handler structure
+ */
+void lv_api_disable_trigger_checkbox(LvHandler * handler);
+
+/**
  * @brief Update the trigger line position on the screen
  *
  * @details If the line is hidden it shows automatically if inside the screen bounds
