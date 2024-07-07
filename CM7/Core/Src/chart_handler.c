@@ -369,17 +369,25 @@ void chart_handler_routine(ChartHandler * handler) {
             float val = NAN;
  
             if (!chart_handler_is_running(handler, ch)) {
-                // TODO: Fix change time scale when stopped
                 // Do not update the values if the oscilloscope is stopped
                 volatile int j = ((int)(i - i_off) * x_scale_ratio);
 
                 // Deal with edge cases
                 if (chart_handler_is_trigger_enabled(handler)) {
                     j -= handler->trigger_index[ch] * (x_scale_ratio - 1);
-                    if (index > half && j >= handler->trigger_index[ch] + half)
-                        j = -1;
-                    else if (index <= half && j >= handler->trigger_index[ch] - half)
-                        j = (j + CHART_HANDLER_VALUES_COUNT) % CHART_HANDLER_VALUES_COUNT;
+
+                    // BUG: Time rescaling breaks signal
+                    // if (x_scale_ratio >= 1) {
+                    //     // Fix small issues with rescaling
+                    //     if (index > half && j >= handler->trigger_index[ch] + half)
+                    //         j = -1;
+                    //     else if (index <= half && j >= handler->trigger_index[ch] - half)
+                    //         j = (j + CHART_HANDLER_VALUES_COUNT) % CHART_HANDLER_VALUES_COUNT;
+                    // }
+                    // else {
+                    //     if (index <= half && j > handler->trigger_index[ch] && j <= handler->trigger_index[ch] + half)
+                    //         j = (j + half) % CHART_HANDLER_VALUES_COUNT;
+                    // }
                 }
                 else
                     j -= half * ((int)x_scale_ratio - 1);
