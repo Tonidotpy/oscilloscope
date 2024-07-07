@@ -72,6 +72,7 @@ void chart_handler_init(ChartHandler * handler, void * api) {
         handler->trigger[ch] = ADC_VOLTAGE_TO_VALUE(1000.f);
         handler->trigger_index[ch] = -1;
     }
+    handler->knob_mode = CHART_HANDLER_KNOB_VOLTAGE;
 }
 
 bool chart_handler_is_enabled(ChartHandler * handler, ChartHandlerChannel ch) {
@@ -109,6 +110,18 @@ void chart_handler_set_trigger(
         return;
     handler->trigger[ch] = value;
     lv_api_update_trigger_line(handler->api, ch, ADC_VALUE_TO_VOLTAGE(value));
+}
+
+ChartHandlerKnobMode chart_handler_knob_get_mode(ChartHandler * handler) {
+    if (handler == NULL)
+        return CHART_HANDLER_KNOB_VOLTAGE;
+    return handler->knob_mode;
+}
+
+void chart_handler_knob_set_mode(ChartHandler * handler, ChartHandlerKnobMode mode) {
+    if (handler == NULL)
+        return;
+    handler->knob_mode = mode;
 }
 
 bool chart_handler_is_running(ChartHandler * handler, ChartHandlerChannel ch) {
@@ -204,6 +217,7 @@ float chart_handler_get_x_scale(ChartHandler * handler, ChartHandlerChannel ch) 
 void chart_handler_set_x_scale(ChartHandler * handler, ChartHandlerChannel ch, float value) {
     if (handler == NULL) return;
     if (!handler->enabled[ch]) return;
+    if (!chart_handler_is_running(handler, ch) && chart_handler_is_trigger_enabled(handler)) return;
     if (value > CHART_MAX_X_SCALE || value < CHART_MIN_X_SCALE) return;
 
     // Update scale and invalidate old data

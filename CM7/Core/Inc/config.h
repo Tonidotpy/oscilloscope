@@ -121,6 +121,9 @@
 /** @brief Threshold used to show the bar only if the time scale is big enough */ 
 #define CHART_LOADING_BAR_THRESHOLD (50000.f)
 
+/** @brief Total number of knobs in the board */
+#define CHART_KNOB_COUNT (3U)
+
 /*** HEADER ***/
 
 /** @brief Size of the header*/

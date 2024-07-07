@@ -219,6 +219,18 @@ static void _lv_apply_theme(lv_theme_t * th, lv_obj_t * obj) {
         lv_style_set_bg_color(&bar_indicator_style, LV_RED);
         lv_obj_add_style(obj, &bar_indicator_style, LV_PART_INDICATOR);
     }
+    else if (lv_obj_check_type(obj, &lv_switch_class)) {
+        static lv_style_t switch_main_style;
+        lv_style_init(&switch_main_style);
+        lv_style_set_margin_right(&switch_main_style, 8U);
+        lv_style_set_bg_color(&switch_main_style, LV_WHITE);
+        lv_obj_add_style(obj, &switch_main_style, LV_PART_MAIN);
+
+        static lv_style_t switch_knob_style;
+        lv_style_init(&switch_knob_style);
+        lv_style_set_bg_color(&switch_knob_style, LV_RED);
+        lv_obj_add_style(obj, &switch_knob_style, LV_PART_KNOB);
+    }
 }
 /**
  * @brief Update the status of the lvgl touch screen input device
@@ -292,6 +304,26 @@ static void _lv_api_trigger_checkbox_handler_desc(lv_event_t * e) {
     }
 }
 
+static void _lv_api_knob_switch_handler(lv_event_t * e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * obj = lv_event_get_target(e);
+    if(code == LV_EVENT_VALUE_CHANGED) {
+        LV_UNUSED(obj);
+        bool status = lv_obj_has_state(obj, LV_STATE_CHECKED);
+        LvHandler * handler = (LvHandler *)lv_event_get_user_data(e);
+
+        // Update label and mode
+        char text[] = "Voltage";
+        ChartHandlerKnobMode mode = CHART_HANDLER_KNOB_VOLTAGE;
+        if (status) {
+            strcpy(text, "Time");
+            mode = CHART_HANDLER_KNOB_TIME;
+        }
+        lv_label_set_text(handler->knob_label, text);
+        chart_handler_knob_set_mode(&handler->chart_handler, mode);
+    }
+}
+
 static void _lv_api_signal_generator_event_handler(lv_event_t * e) {
     lv_obj_t * obj = lv_event_get_target(e);
     shared_data->generator_index = lv_obj_get_index(obj);
@@ -320,25 +352,41 @@ lv_obj_t * _lv_api_create_chart(lv_obj_t * parent, uint32_t *buffer) {
     return chart;
 }
 
-void _lv_api_init_trigger_tab(LvHandler * handler, lv_obj_t * tabview) {
-    lv_obj_t * trigger_tab = lv_tabview_add_tab(tabview, "Trigger");
+void _lv_api_init_settings_tab(LvHandler * handler, lv_obj_t * tabview) {
+    lv_obj_t * settings_tab = lv_tabview_add_tab(tabview, "Settings");
     
-    lv_obj_set_flex_flow(trigger_tab, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(trigger_tab, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_set_flex_flow(settings_tab, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(settings_tab, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
 
-    handler->trigger_checkbox_asc = lv_checkbox_create(trigger_tab);
+    handler->trigger_checkbox_asc = lv_checkbox_create(settings_tab);
     lv_checkbox_set_text(handler->trigger_checkbox_asc, "Enable ascending trigger");
     lv_obj_add_event_cb(handler->trigger_checkbox_asc, _lv_api_trigger_checkbox_handler_asc, LV_EVENT_ALL, handler);
     lv_obj_update_layout(handler->trigger_checkbox_asc);
 
-    handler->trigger_checkbox_desc = lv_checkbox_create(trigger_tab);
+    handler->trigger_checkbox_desc = lv_checkbox_create(settings_tab);
     lv_checkbox_set_text(handler->trigger_checkbox_desc, "Enable descending trigger");
     lv_obj_add_event_cb(handler->trigger_checkbox_desc, _lv_api_trigger_checkbox_handler_desc, LV_EVENT_ALL, handler);
     lv_obj_update_layout(handler->trigger_checkbox_desc);
 
+    lv_obj_t * knob_container = lv_obj_create(settings_tab);
+    lv_obj_set_flex_flow(knob_container, LV_FLEX_FLOW_ROW);
+
+    handler->knob_switch = lv_switch_create(knob_container);
+    handler->knob_label = lv_label_create(knob_container);
+    lv_obj_add_event_cb(handler->knob_switch, _lv_api_knob_switch_handler, LV_EVENT_ALL, handler);
+    lv_label_set_text(handler->knob_label, "Voltage");
+
     // Set style which cant be set inside the theme
-    lv_obj_set_style_bg_color(trigger_tab, LV_BLACK, LV_PART_MAIN);
-    lv_obj_set_style_pad_all(trigger_tab, 30U, LV_PART_MAIN);
+    lv_obj_set_style_margin_top(knob_container, 25U, LV_PART_MAIN);
+    lv_obj_set_style_margin_left(knob_container, 8U, LV_PART_MAIN);
+    lv_obj_set_style_bg_color(knob_container, LV_BLACK, LV_PART_MAIN);
+
+    lv_obj_set_align(handler->knob_switch, LV_ALIGN_LEFT_MID);
+    lv_obj_set_align(handler->knob_label, LV_ALIGN_RIGHT_MID);
+    lv_obj_set_style_text_color(handler->knob_label, LV_WHITE, LV_PART_MAIN);
+
+    lv_obj_set_style_bg_color(settings_tab, LV_BLACK, LV_PART_MAIN);
+    lv_obj_set_style_pad_all(settings_tab, 30U, LV_PART_MAIN);
 }
 
 void _lv_api_init_signal_generator_tab(LvHandler * handler, lv_obj_t * tabview) {
@@ -377,7 +425,7 @@ void _lv_api_menu_init(LvHandler * handler) {
     lv_tabview_set_tab_bar_size(tabview, 200U);
 
     // Add tabs to the tabview
-    _lv_api_init_trigger_tab(handler, tabview);
+    _lv_api_init_settings_tab(handler, tabview);
     _lv_api_init_signal_generator_tab(handler, tabview);
 }
 

@@ -29,6 +29,19 @@ typedef enum {
 } ChartHandlerChannel;
 
 /**
+ * @brief Type definition for the knob modes
+ *
+ * @details
+ *     - CHART_HANDLER_KNOB_VOLTAGE the knobs can change the voltage scale and offset
+ *     - CHART_HANDLER_KNOB_TIME the knobs can change the time scale and offset
+ */
+typedef enum {
+    CHART_HANDLER_KNOB_VOLTAGE,
+    CHART_HANDLER_KNOB_TIME,
+    CHART_HANDLER_KNOB_COUNT
+} ChartHandlerKnobMode;
+
+/**
  * @brief Definition to the chart handler structure
  *
  * @details The api is a void pointer to avoid problems of circular dependency
@@ -75,6 +88,9 @@ typedef struct {
     size_t trigger_before_count[CHART_HANDLER_CHANNEL_COUNT];
     size_t trigger_after_count[CHART_HANDLER_CHANNEL_COUNT];
  
+    // Knobs
+    ChartHandlerKnobMode knob_mode;
+
     // Channels
     bool enabled[CHART_HANDLER_CHANNEL_COUNT];
     bool stop_request[CHART_HANDLER_CHANNEL_COUNT];
@@ -140,6 +156,23 @@ void chart_handler_set_trigger(
     ChartHandlerChannel ch,
     uint16_t value
 );
+
+/**
+ * @brief Get the mode of the knobs
+ *
+ * @param handler A pointer to the chart handler structure
+ *
+ * @return The knob mode
+ */
+ChartHandlerKnobMode chart_handler_knob_get_mode(ChartHandler * handler);
+
+/**
+ * @brief Set the mode of the knobs
+ *
+ * @param handler A pointer to the chart handler structure
+ * @param mode The mode to set
+ */
+void chart_handler_knob_set_mode(ChartHandler * handler, ChartHandlerKnobMode mode);
 
 /**
  * @brief Check if the chart handler channel plot is updating

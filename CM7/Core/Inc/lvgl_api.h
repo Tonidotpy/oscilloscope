@@ -45,6 +45,10 @@ typedef struct {
     bool trigger_update[CHART_HANDLER_CHANNEL_COUNT];
     lv_obj_t * trigger_checkbox_asc;
     lv_obj_t * trigger_checkbox_desc;
+    
+    // Settings
+    lv_obj_t * knob_switch;
+    lv_obj_t * knob_label;
 
     // Loading bar
     lv_obj_t * loading_bar;
