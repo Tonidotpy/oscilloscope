@@ -356,10 +356,12 @@ void chart_handler_routine(ChartHandler * handler) {
         const float x_off = handler->x_offset[ch] - handler->x_offset_paused[ch];
         const float i_off = x_off / time_per_value;
 
+        const size_t half = CHART_HANDLER_VALUES_COUNT / 2U;
+
         // Shift index based on trigger if enabled
         size_t index = 0;
         if (chart_handler_is_trigger_enabled(handler)) {
-            const size_t trigger_offset = CHART_HANDLER_VALUES_COUNT / 2U;
+            const size_t trigger_offset = half;
             index = (trigger_offset - handler->trigger_index[ch] + CHART_HANDLER_VALUES_COUNT) % CHART_HANDLER_VALUES_COUNT;
         }
         
@@ -372,10 +374,15 @@ void chart_handler_routine(ChartHandler * handler) {
                 volatile int j = ((int)(i - i_off) * x_scale_ratio);
 
                 // Deal with edge cases
-                if (chart_handler_is_trigger_enabled(handler))
+                if (chart_handler_is_trigger_enabled(handler)) {
                     j -= handler->trigger_index[ch] * (x_scale_ratio - 1);
+                    if (index > half && j >= handler->trigger_index[ch] + half)
+                        j = -1;
+                    else if (index <= half && j >= handler->trigger_index[ch] - half)
+                        j = (j + CHART_HANDLER_VALUES_COUNT) % CHART_HANDLER_VALUES_COUNT;
+                }
                 else
-                    j -= (CHART_HANDLER_VALUES_COUNT / 2) * ((int)x_scale_ratio - 1);
+                    j -= half * ((int)x_scale_ratio - 1);
 
                 if (j >= 0 && j < CHART_HANDLER_VALUES_COUNT)
                     val = ADC_VALUE_TO_VOLTAGE(handler->raw[ch][j]);
