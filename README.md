@@ -17,19 +17,26 @@ This project leverages a dual-core microcontroller to create an integrated oscil
 
 ### Features
 
+- **Oscilloscope**:
+  - Real-time data acquisition and plotting.
+  - Triggering options and adjustable scaling.
+  
+- **Signal Generator**:
+  - Multiple waveform generation (sine, square, triangle, ecc.).
+
 - **Touchscreen Interface**: 
   - User-friendly touchscreen for easy navigation and control.
   - Real-time waveform display and interactive oscilloscope controls.
   - Intuitive menus for selecting and configuring the signal generator parameters.
-
-- **Oscilloscope**:
-  - Real-time data acquisition and plotting.
-  - Triggering options and adjustable scaling.
-
-- **Signal Generator**:
-  - Multiple waveform generation (sine, square, triangle, ecc.).
   
-## Requirements
+## Software Requirements
+
+To use this project, you will need the following software:
+
+- OpenOCD
+- ARM toolchain
+
+## Hardware Requirements
 
 To use this project, you will need the following hardware:
 
@@ -61,7 +68,7 @@ Oscilloscope
 │           ├── stm32h7xx_it.c
 │           ├── syscalls.c
 │           └── sysmem.c
-├── CM7                                 # osscilloscope core
+├── CM7                                 # oscilloscope core
 │   └── Core
 │       ├── Inc
 │       │   ├── chart_handler.h
@@ -97,3 +104,8 @@ Oscilloscope
 ├── openocd.cfg
 └── oscilloscope.ioc
 ```
+
+## Contribution
+
+- **Antonio Gelain**: Signal Rescaling, Micro configuration, Raw values conversion to screen coordinates, Controllers drivers, LVGL integration
+- **Enrico Dal Bianco**: Signal generator, Trigger, User Interface
