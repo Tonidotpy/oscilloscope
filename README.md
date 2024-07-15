@@ -118,5 +118,5 @@ Oscilloscope
 
 ## Contribution
 
-- **Antonio Gelain**: Signal Rescaling, Micro configuration, Raw values conversion to screen coordinates, Controllers drivers, LVGL integration
-- **Enrico Dal Bianco**: Signal generator, Trigger, User Interface
+- **Antonio Gelain**: Signal Rescaling, Micro configuration, Data processing, LVGL integration
+- **Enrico Dal Bianco**: Signal generator, Trigger, Data processing, User Interface
