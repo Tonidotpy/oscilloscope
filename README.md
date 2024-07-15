@@ -61,7 +61,6 @@ Oscilloscope
 │       │   ├── main.h
 │       │   ├── stm32h7xx_hal_conf.h
 │       │   ├── stm32h7xx_it.h
-│       │   └── waves.h                 # contains all the waves points
 │       └── Src
 │           ├── main.c
 │           ├── stm32h7xx_hal_msp.c
@@ -79,8 +78,7 @@ Oscilloscope
 │       │   ├── main.h
 │       │   ├── stm32h7xx_hal_conf.h
 │       │   ├── stm32h7xx_it.h
-│       │   ├── touch_screen.h
-│       │   └── waves.h                 # contains all the waves points
+│       │   └── touch_screen.h
 │       └── Src
 │           ├── chart_handler.c
 │           ├── lcd.c
@@ -92,6 +90,8 @@ Oscilloscope
 │           ├── sysmem.c
 │           └── touch_screen.c
 ├── Common
+|   └── Inc
+│       └── waves.h                 # contains all the points of the signal generator
 ├── Drivers
 │   ├── BSP
 │   ├── CMSIS
@@ -100,6 +100,9 @@ Oscilloscope
 │   ├── CM4
 │   ├── CM7
 │   └── Makefile
+├── Scripts
+|   ├── generate_waves.cpp              # Script to generate waves.h
+|   └── plot.py                         # used to plot waves.h
 ├── README.md
 ├── openocd.cfg
 └── oscilloscope.ioc
