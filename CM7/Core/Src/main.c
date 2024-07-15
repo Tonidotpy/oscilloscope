@@ -156,28 +156,43 @@ void select_knob_channel(size_t i) {
 }
 
 void update_knob_trigger(uint16_t value) {
-    
+    static uint16_t prev_value = 0U;
+
+    if (value / 50 == prev_value / 50)
+        return;
+    prev_value = value;
+
+    value *= 4U;
+    chart_handler_set_trigger(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, value);
 }
 
 void update_knob_scale(uint16_t value) {
     static size_t prev_index = 6U;
+    static size_t prev_x_index = 6U;
 
     const float scales[] = { 50.f, 100.f, 125.f, 250.f, 500.f, 1000.f, 2000.f, 5000.f };
-    const float x_scales[] = { 10.f, 25.f, 50.f, 100.f, 500.f, 1000.f, 2000.f, 5000.f };
+    const float x_scales[] = { 10.f, 50.f, 100.f, 500.f, 1000.f, 2000.f, 5000.f, 10000.f, 50000.f, 100000.f };
 
     ChartHandlerKnobMode mode = chart_handler_knob_get_mode(&lv_handler.chart_handler);
-    size_t index = value / 512;
-    if (index == prev_index)
-        return;
-    
-    prev_index = index;
 
     switch (mode) {
         case CHART_HANDLER_KNOB_VOLTAGE:
-            chart_handler_set_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, scales[index]);
+            {
+                size_t index = value / 512;
+                if (index == prev_index)
+                    return; 
+                prev_index = index;
+                chart_handler_set_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, scales[index]);
+            }
             break;
         case CHART_HANDLER_KNOB_TIME:
-            chart_handler_set_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, x_scales[index]);
+            {
+                size_t index = value / 372.36;
+                if (index == prev_x_index)
+                    return; 
+                prev_x_index = index;
+                chart_handler_set_x_scale(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, x_scales[index]);
+            }
             break;
         default:
             break;
@@ -185,7 +200,23 @@ void update_knob_scale(uint16_t value) {
 }
 
 void update_knob_offset(uint16_t value) {
-    
+    static uint16_t prev_value = 0U;
+
+    if (value / 50 == prev_value / 50)
+        return;
+    prev_value = value;
+
+    ChartHandlerKnobMode mode = chart_handler_knob_get_mode(&lv_handler.chart_handler);
+    switch (mode) {
+        case CHART_HANDLER_KNOB_VOLTAGE:
+            chart_handler_set_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, ADC_VALUE_TO_VOLTAGE(value));
+            break;
+        case CHART_HANDLER_KNOB_TIME:
+            chart_handler_set_x_offset(&lv_handler.chart_handler, CHART_HANDLER_CHANNEL_1, ADC_VALUE_TO_VOLTAGE(value));
+            break;
+        default:
+            break;
+    }
 }
 
 /* USER CODE END 0 */

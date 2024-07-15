@@ -135,6 +135,7 @@ AS_INCLUDES =
 # C includes
 C_INCLUDES =  \
 -I../../CM4/Core/Inc \
+-I../../Common/Inc \
 -I../../Drivers/STM32H7xx_HAL_Driver/Inc \
 -I../../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy \
 -I../../Drivers/CMSIS/Device/ST/STM32H7xx/Include \

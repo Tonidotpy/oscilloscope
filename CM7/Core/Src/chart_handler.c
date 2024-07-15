@@ -274,7 +274,7 @@ void chart_handler_update(ChartHandler * handler, uint32_t t) {
         static uint16_t prev_raw = 0U;
 
         volatile static float off = 0.f; 
-        for(size_t i = 0U; i < CHART_HANDLER_VALUES_COUNT; ++i) {
+        for (size_t i = 0U; i < CHART_HANDLER_VALUES_COUNT; ++i) {
             // Calculate samples index
             float samples = samples_per_value * i + off;
             size_t j = samples < 0.f ? 0U : (size_t)floorf(samples);
