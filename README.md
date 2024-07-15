@@ -4,6 +4,14 @@
 
 This project leverages a dual-core microcontroller to create an integrated oscilloscope and signal generator system with a touchscreen interface. The microcontroller is divided into two cores, each dedicated to specific functionalities to ensure smooth and efficient operation.
 
+## Link to the video
+
+- [Pitch video](https://drive.google.com/file/d/18WK4ki9e3cDzACd6025i3Nx__H-AB-II/view?usp=drive_link)
+
+## Link to the presentation
+
+- [Presentation](https://docs.google.com/presentation/d/1p2Bm2zt5RV1kEiYcVH5DbpTx-yv9Lrlnyj-7gMxgMvk/edit#slide=id.p)
+
 ### Core Functionality
 
 - **CM7 Core**:
